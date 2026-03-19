@@ -8,19 +8,20 @@ public class DragonController : MonoBehaviour
     public Transform[] spawnPoints;
     public GameObject endScreen;
     public GameObject villagerAnimation; // Visual for "freeing villagers"
+    public Transform startingPoint;
 
     public void UpgradeDragon()
     {
         // 1. Play Growing/Eating Animation
-        dragonAnimator.SetTrigger("Grow");
+        dragonAnimator.Play("Grow_2");
 
         // 2. Run action: Freeing villagers
         if (villagerAnimation != null) villagerAnimation.SetActive(true);
 
         // 3. Increment stage and spawn more fishermen
-        if (currentStage < 3)
+        if (currentStage < 2)
         {
-            SpawnFishermen(currentStage); // Spawns more as dragon grows
+            SpawnFishermen(spawnPoints.Length); // Spawns more as dragon grows
             currentStage++;
         }
         else
@@ -33,7 +34,9 @@ public class DragonController : MonoBehaviour
     {
         for (int i = 0; i < count; i++)
         {
-            Instantiate(fishermanPrefab, spawnPoints[i].position, Quaternion.identity);
+            // Instantiate(fishermanPrefab, spawnPoints[i].position, Quaternion.identity);
+            spawnPoints[i].gameObject.SetActive(true); // Activate pre-placed fishermen at spawn points
+            spawnPoints[i].GetComponent<Fisherman>().MoveToLocation(startingPoint.position);
         }
     }
 

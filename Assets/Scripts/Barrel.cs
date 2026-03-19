@@ -5,7 +5,7 @@ using TMPro;
 public class Barrel : MonoBehaviour
 {
     public int currentFish = 0;
-    public int[] requirements = { 10, 30, 60 }; // Fish needed for Stage 1, 2, 3
+    public int[] requirements = { 2, 5, 10 }; // Fish needed for Stage 1, 2, 3
     public TextMeshProUGUI countText;
     public Button feedButton;
     public DragonController dragon;
