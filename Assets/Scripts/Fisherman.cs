@@ -55,6 +55,7 @@ public class Fisherman : MonoBehaviour
     IEnumerator MoveFishToBarrel()
     {
         GameObject fish = Instantiate(fishPrefab, transform.position, Quaternion.identity);
+        SoundController.Instance.PlaySFX(SoundType.FishCatch);
         float elapsed = 0;
         float duration = 0.5f;
         StopFishing();
@@ -78,6 +79,7 @@ public class Fisherman : MonoBehaviour
         hasMovedToLocation = false;
         targetLocation = transform.position; // Current position is the target
         startingLocation = startLocation;
+        SoundController.Instance.PlaySFX(SoundType.Walking);
         transform.position = startingLocation; // Move to starting point first
         transform.DOMove(targetLocation, 1f).OnComplete(() => {
             hasMovedToLocation = true;

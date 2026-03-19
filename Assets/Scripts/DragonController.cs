@@ -14,6 +14,7 @@ public class DragonController : MonoBehaviour
     {
         // 1. Play Growing/Eating Animation
         dragonAnimator.Play("Grow_2");
+        SoundController.Instance.PlaySFX(SoundType.Upgrade);
 
         // 2. Run action: Freeing villagers
         if (villagerAnimation != null) villagerAnimation.SetActive(true);
@@ -21,6 +22,7 @@ public class DragonController : MonoBehaviour
         // 3. Increment stage and spawn more fishermen
         if (currentStage < 2)
         {
+            SoundController.Instance.PlaySFX(SoundType.FireBreath);
             SpawnFishermen(spawnPoints.Length); // Spawns more as dragon grows
             currentStage++;
         }
@@ -49,5 +51,6 @@ public class DragonController : MonoBehaviour
         foreach (var f in allFishermen) f.StopFishing();
         
         Debug.Log("Congratulations! You've saved the city!");
+        SoundController.Instance.PlaySFX(SoundType.Win);
     }
 }
