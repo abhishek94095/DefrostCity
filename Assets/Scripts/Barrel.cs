@@ -25,6 +25,7 @@ public class Barrel : MonoBehaviour
         if (currentFish >= requirements[dragon.currentStage - 1])
         {
             if(feedButton != null) feedButton.gameObject.SetActive(true);
+            FTUEManager.Instance.ShowFeedFTUE();
         }
     }
 
@@ -39,5 +40,6 @@ public class Barrel : MonoBehaviour
         dragon.UpgradeDragon(); // Trigger upgrade action
         currentFish = 0;
         UpdateUI();
+        FTUEManager.Instance.StopFeedFTUE();
     }
 }

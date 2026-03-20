@@ -43,6 +43,7 @@ public class Fisherman : MonoBehaviour
         if (!isFishing) {
             timer = 0;
             isFishing = true;
+            FTUEManager.Instance.StopStartFTUE();
         }
     }
 
