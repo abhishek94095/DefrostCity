@@ -31,7 +31,7 @@ public class Barrel : MonoBehaviour
 
     void UpdateUI()
     {
-        if(countText != null) countText.text = currentFish.ToString();
+        if(countText != null) countText.text = currentFish + " / " + requirements[dragon.currentStage - 1];
     }
 
     public void OnFeedClick()

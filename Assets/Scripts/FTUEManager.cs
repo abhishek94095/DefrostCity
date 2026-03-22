@@ -24,7 +24,7 @@ public class FTUEManager : MonoBehaviour
 
     private void Start()
     {
-        Invoke(nameof(ShowStartFTUE), 2.5f);
+        Invoke(nameof(ShowStartFTUE), 5.5f);
     }
 
     // 🟢 START FTUE
