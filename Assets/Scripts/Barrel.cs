@@ -4,11 +4,17 @@ using TMPro;
 
 public class Barrel : MonoBehaviour
 {
+    public static Barrel Instance;
     public int currentFish = 0;
     public int[] requirements = { 2, 5, 10 }; // Fish needed for Stage 1, 2, 3
     public TextMeshProUGUI countText;
     public Button feedButton;
     public DragonController dragon;
+
+    void Awake()
+    {
+        Instance = this;
+    }
 
     void Start()
     {
@@ -19,7 +25,8 @@ public class Barrel : MonoBehaviour
     public void AddFish(int amount)
     {
         currentFish += amount;
-        UpdateUI();
+        //UpdateUI();
+        dragon.FeedFish(amount);
 
         // Show button if requirement for current dragon stage is met
         if (currentFish >= requirements[dragon.currentStage - 1])

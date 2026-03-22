@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.UI;
 
 public class DragonController : MonoBehaviour
 {
@@ -9,10 +10,13 @@ public class DragonController : MonoBehaviour
     public GameObject endScreen;
     public GameObject villagerAnimation; // Visual for "freeing villagers"
     public Transform startingPoint;
+    public int[] requirements = { 2, 5, 10 }; // Fish needed for Stage 1, 2, 3
+    private int fishFed = 0;
 
     public void UpgradeDragon()
     {
         // 1. Play Growing/Eating Animation
+        fishFed = 0;
         dragonAnimator.Play("Grow_2");
         SoundController.Instance.PlaySFX(SoundType.Upgrade);
 
@@ -23,13 +27,36 @@ public class DragonController : MonoBehaviour
         if (currentStage < 2)
         {
             SoundController.Instance.PlaySFX(SoundType.FireBreath);
-            SpawnFishermen(spawnPoints.Length); // Spawns more as dragon grows
+            //SpawnFishermen(spawnPoints.Length); // Spawns more as dragon grows
             currentStage++;
         }
         else
         {
             FinalWin(); // End screen on last stage
         }
+    }
+
+    public void FeedFishOneByOne(int fishAmount)
+    {
+        if (fishAmount <= 0) return;
+        fishFed += fishAmount;
+        // 🔥 Play animation per fish
+        SoundController.Instance.PlaySFX(SoundType.Feed);
+        if (fishFed >= requirements[currentStage - 1])
+        {
+            UpgradeDragon();
+        }
+
+    }
+
+    public void FeedAnimation() => dragonAnimator.SetTrigger("Feed");
+
+    public void FeedFish(int fishAmount)
+    {
+        if (fishAmount <= 0) return;
+
+        fishFed += fishAmount;
+        SoundController.Instance.PlaySFX(SoundType.Feed);
     }
 
     void SpawnFishermen(int count)

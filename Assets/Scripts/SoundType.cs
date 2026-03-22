@@ -7,5 +7,6 @@ public enum SoundType
     Upgrade,
     Walking,
     FireBreath,
-    Win
+    Win,
+    Feed
 }
