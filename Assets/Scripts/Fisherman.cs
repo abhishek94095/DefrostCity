@@ -18,6 +18,8 @@ public class Fisherman : MonoBehaviour
     [SerializeField] private AnimatorController runningAnimatorController, idleAnimatorController;
     
     [SerializeField] private Vector3 targetLocation, startingLocation;
+    [SerializeField] private Vector3 cameraPositionOffset, cameraRotationOffset;
+    [SerializeField] private float cameraFieldOfViewAfterSet = 30f;
     private float timer = 0;
     private float coughtFishCount = 0;
     private bool isFishing = false;
@@ -105,10 +107,27 @@ public class Fisherman : MonoBehaviour
         {
             hasMovedToLocation = true;
             animator.runtimeAnimatorController = idleAnimatorController;
+            RotateCamera();
 
             // Final snap (safety)
             transform.position = GetGroundPosition(groundedTarget) + Vector3.up; // Slightly above ground to avoid clipping
         });
+    }
+
+    private void RotateCamera()
+    {
+        if (!isFollowingCamera) return;
+
+        Camera mainCamera = Camera.main;
+        if (mainCamera == null) return;
+
+        Vector3 targetPosition = cameraPositionOffset;
+        Vector3 targetRotation = cameraRotationOffset;
+
+        // change local position and local rotation
+        mainCamera.transform.DOLocalMove(targetPosition, 1f);
+        mainCamera.transform.DOLocalRotate(targetRotation, 1f);
+        mainCamera.DOFieldOfView(cameraFieldOfViewAfterSet, 1f);
     }
 
     private Vector3 GetGroundPosition(Vector3 position)

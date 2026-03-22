@@ -5037,6 +5037,9 @@ MonoBehaviour:
   idleAnimatorController: {fileID: 9100000, guid: 2f676d6da1cf8a5459fd208419e99a08, type: 2}
   targetLocation: {x: -5.6, y: 21.97, z: -38.63}
   startingLocation: {x: -6.17, y: 21.97, z: -22.79}
+  cameraPositionOffset: {x: 0, y: 14, z: 14}
+  cameraRotationOffset: {x: 45, y: 180, z: 0}
+  cameraFieldOfViewAfterSet: 30
 --- !u!65 &2118453851
 BoxCollider:
   m_ObjectHideFlags: 0
