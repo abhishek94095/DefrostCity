@@ -90,13 +90,37 @@ public class Fisherman : MonoBehaviour
     {
         animator.runtimeAnimatorController = runningAnimatorController;
         hasMovedToLocation = false;
+
         SoundController.Instance.PlaySFX(SoundType.Walking);
-        transform.position = startingLocation; // Move to starting point first
-        transform.DOMove(targetLocation, 3f).OnComplete(() => {
+
+        // Snap starting position to ground
+        Vector3 groundedStart = GetGroundPosition(startingLocation);
+        transform.position = groundedStart;
+
+        // Snap target position to ground
+        Vector3 groundedTarget = GetGroundPosition(targetLocation);
+
+        // Move to grounded target
+        transform.DOMove(groundedTarget, 3f).OnComplete(() =>
+        {
             hasMovedToLocation = true;
             animator.runtimeAnimatorController = idleAnimatorController;
-            transform.position = targetLocation + new Vector3(0, 1, 0); // Ensure final position is exact
+
+            // Final snap (safety)
+            transform.position = GetGroundPosition(groundedTarget) + Vector3.up; // Slightly above ground to avoid clipping
         });
+    }
+
+    private Vector3 GetGroundPosition(Vector3 position)
+    {
+        Ray ray = new Ray(position + Vector3.up * 1f, Vector3.down);
+
+        if (Physics.Raycast(ray, out RaycastHit hit, 20f))
+        {
+            return hit.point;
+        }
+
+        return position; // fallback if nothing hit
     }
 
     internal void MoveToLocation(Vector3 startLocation)
