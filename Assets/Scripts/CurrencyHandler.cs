@@ -6,7 +6,7 @@ public class CurrencyHandler : MonoBehaviour
 {
     public static CurrencyHandler Instance;
 
-    [SerializeField] private int currentGold = 0;
+    public int currentGold = 0;
     [SerializeField] private int goldPerFish = 10; // 🔥 configurable
     [SerializeField] private TextMeshProUGUI goldText;
 

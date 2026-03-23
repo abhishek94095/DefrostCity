@@ -40,14 +40,18 @@ public class Fisherman : MonoBehaviour
 
         if (isFollowingCamera)
         {
-            Camera.main.transform.SetParent(transform);
+            // Camera.main.transform.SetParent(transform);
+            // Camera.main.transform.localPosition -= Vector3.forward * 12f; // Default offset, adjust as needed
             originalCameraPosition = Camera.main.transform.localPosition;
             originalCameraRotation = Camera.main.transform.localRotation;
             //Barrel.Instance.dragon.FeedButton.onClick.AddListener(() => FeedFishToDragon(this));
-
+            MoveFromToLocation();
+        }
+        else
+        {
+            movementButton.transform.parent.gameObject.SetActive(false); // Hide movement button if not following camera
         }
 
-        MoveFromToLocation();
     }
 
     void Update()
@@ -140,7 +144,8 @@ public class Fisherman : MonoBehaviour
     {
         hasMovedToLocation = false;
         SoundController.Instance.PlaySFX(SoundType.Walking);
-
+        animator.SetBool("RunningStart", true);
+        animator.SetBool("RunningEnd", false);
         Vector3 startPos = startingLocation;
         Vector3 endPos = targetLocation;
         float elapsed = 0f;
@@ -169,13 +174,15 @@ public class Fisherman : MonoBehaviour
         // Final logic previously in .OnComplete
         hasMovedToLocation = true;
         if (isFollowingCamera) RotateCamera();
-        
+        animator.SetBool("RunningStart", false);
+        animator.SetBool("RunningEnd", true);
         // Optional: Keep your safety offset if needed
         // transform.position += Vector3.up * 0.1f; 
     }
 
     private void RotateCamera()
     {
+        return;
         if (!isFollowingCamera) return;
 
         Camera mainCamera = Camera.main;
@@ -215,40 +222,107 @@ public class Fisherman : MonoBehaviour
             // animator.runtimeAnimatorController = idleAnimatorController;
         });
     }
-
-    [ContextMenu("Move To Barrel")]
-    public void MoveToBarrel()
+    private IEnumerator MoveToBarrelRoutine(float duration)
     {
         hasMovedToLocation = false;
         movementButton.gameObject.SetActive(false);
         SoundController.Instance.PlaySFX(SoundType.Walking);
-        Vector3[] path = new Vector3[wayToBarrel.Count];
-
+        
+        List<Vector3> path = new List<Vector3>();
+        path.Add(transform.position); 
         for (int i = 0; i < wayToBarrel.Count; i++)
         {
-            path[i] = GetGroundPosition(wayToBarrel[i].position);
+            path.Add(wayToBarrel[i].position);
         }
+        
+        // Calculate total path distance to keep speed constant
+        float totalDistance = 0;
+        for (int i = 0; i < path.Count - 1; i++)
+        {
+            totalDistance += Vector3.Distance(path[i], path[i + 1]);
+        }
+        float moveSpeed = totalDistance / duration;
+
         FTUEManager.Instance.StopFeedFTUE();
 
         // 🎥 Camera (local only)
         RotateCameraLocalTween();
         // 🔄 STEP 1: Rotate player instantly (NO tween conflict)
-        transform.rotation = GetLookRotation(path[0]);
+        if (path.Count > 1) transform.rotation = GetLookRotation(GetGroundPosition(path[1]));
         // 🏃 STEP 2: Start movement immediately
         //animator.runtimeAnimatorController = runningAnimatorController;
-        transform.DOPath(path, 4f, PathType.CatmullRom)
-            .SetEase(Ease.Linear)
-            .SetOptions(false) // 🔥 IMPORTANT: disables automatic rotation
-            .OnUpdate(UpdateRotationWhileMoving)
-            .OnComplete(() =>
+        animator.SetBool("RunningStart", true);
+        DOVirtual.DelayedCall(0.5f, () => animator.SetBool("RunningStart", false));
+        animator.SetBool("RunningEnd", false);
+        for (int i = 0; i < path.Count - 1; i++)
+        {
+            Vector3 startPoint = path[i];
+            Vector3 endPoint = path[i + 1];
+            float segmentDist = Vector3.Distance(startPoint, endPoint);
+            if (segmentDist <= 0) continue;
+
+            float segmentDuration = segmentDist / moveSpeed;
+            float elapsed = 0f;
+
+            while (elapsed < segmentDuration)
             {
-                hasMovedToLocation = true;
-                // animator.runtimeAnimatorController = idleAnimatorController;
-                isNearDragon = true;
-                SetButtonStatus();
-                feedButton.gameObject.SetActive(true);
-                transform.position = GetGroundPosition(transform.position) + Vector3.up;
-            });
+                elapsed += Time.deltaTime;
+                float t = elapsed / segmentDuration;
+                
+                Vector3 currentPos = Vector3.Lerp(startPoint, endPoint, t);
+                transform.position = GetGroundPosition(currentPos);
+                UpdateRotationWhileMoving();
+
+                yield return null;
+            }
+        }
+
+        transform.position = GetGroundPosition(path[path.Count - 1]);
+
+        hasMovedToLocation = true;
+        // animator.runtimeAnimatorController = idleAnimatorController;
+        isNearDragon = true;
+        SetButtonStatus();
+        feedButton.gameObject.SetActive(true);
+        transform.position = GetGroundPosition(transform.position);
+        transform.eulerAngles = new Vector3(0, 180, 0); // Ensure facing dragon
+        animator.SetBool("RunningStart", false);
+        animator.SetBool("RunningEnd", true);
+    }
+    [ContextMenu("Move To Barrel")]
+    public void MoveToBarrel()
+    {
+        StartCoroutine(MoveToBarrelRoutine(4f));
+        // hasMovedToLocation = false;
+        // movementButton.gameObject.SetActive(false);
+        // SoundController.Instance.PlaySFX(SoundType.Walking);
+        // Vector3[] path = new Vector3[wayToBarrel.Count];
+
+        // for (int i = 0; i < wayToBarrel.Count; i++)
+        // {
+        //     path[i] = GetGroundPosition(wayToBarrel[i].position);
+        // }
+        // FTUEManager.Instance.StopFeedFTUE();
+
+        // // 🎥 Camera (local only)
+        // RotateCameraLocalTween();
+        // // 🔄 STEP 1: Rotate player instantly (NO tween conflict)
+        // transform.rotation = GetLookRotation(path[0]);
+        // // 🏃 STEP 2: Start movement immediately
+        // //animator.runtimeAnimatorController = runningAnimatorController;
+        // transform.DOPath(path, 4f, PathType.CatmullRom)
+        //     .SetEase(Ease.Linear)
+        //     .SetOptions(false) // 🔥 IMPORTANT: disables automatic rotation
+        //     .OnUpdate(UpdateRotationWhileMoving)
+        //     .OnComplete(() =>
+        //     {
+        //         hasMovedToLocation = true;
+        //         // animator.runtimeAnimatorController = idleAnimatorController;
+        //         isNearDragon = true;
+        //         SetButtonStatus();
+        //         feedButton.gameObject.SetActive(true);
+        //         transform.position = GetGroundPosition(transform.position) + Vector3.up;
+        //     });
 
     }
     void RotateCameraProper()
@@ -281,40 +355,105 @@ public class Fisherman : MonoBehaviour
 
         previousPosition = transform.position;
     }
-
-    private Vector3 previousPosition;
-    [ContextMenu("Return To Fishing Site")]
-    public void ReturnToFishingSite()
+    private IEnumerator ReturnToFishingSiteRoutine(float duration)
     {
         hasMovedToLocation = false;
         SoundController.Instance.PlaySFX(SoundType.Walking);
+        animator.SetBool("RunningStart", true);
+        DOVirtual.DelayedCall(0.5f, () => animator.SetBool("RunningStart", false));
+        animator.SetBool("RunningEnd", false);
         List<Vector3> path = new List<Vector3>();
+        path.Add(transform.position); 
         movementButton.gameObject.SetActive(false);
         feedButton.gameObject.SetActive(false);
 
         for (int i = wayToBarrel.Count - 1; i >= 0; i--)
         {
-            path.Add(GetGroundPosition(wayToBarrel[i].position));
+            path.Add(wayToBarrel[i].position);
         }
+        path.Add(targetLocation);
 
-        path.Add(GetGroundPosition(targetLocation) + Vector3.up);
+        // Calculate total path distance to keep speed constant
+        float totalDistance = 0;
+        for (int i = 0; i < path.Count - 1; i++)
+        {
+            totalDistance += Vector3.Distance(path[i], path[i + 1]);
+        }
+        float moveSpeed = totalDistance / duration;
+
         // 🎥 Reset camera (same as before)
         ResetCameraLocalTween();
         // ✅ ONLY HERE we lock rotation (your desired angle)
-        transform.eulerAngles = new Vector3(0, 180, 0); // change if needed
+        transform.eulerAngles = new Vector3(0, 180, 0); 
         // animator.runtimeAnimatorController = runningAnimatorController;
-        transform.DOPath(path.ToArray(), 4f, PathType.CatmullRom)
-            .SetEase(Ease.Linear)
-            .SetOptions(false) // important: no auto rotation
-            .OnComplete(() =>
+
+        for (int i = 0; i < path.Count - 1; i++)
+        {
+            Vector3 startPoint = path[i];
+            Vector3 endPoint = path[i + 1];
+            float segmentDist = Vector3.Distance(startPoint, endPoint);
+            if (segmentDist <= 0) continue;
+
+            float segmentDuration = segmentDist / moveSpeed;
+            float elapsed = 0f;
+
+            while (elapsed < segmentDuration)
             {
-                hasMovedToLocation = true;
-                // animator.runtimeAnimatorController = idleAnimatorController;
-                transform.position = GetGroundPosition(transform.position) + Vector3.up;
-                isNearDragon = false;
-                SetButtonStatus();
-                RotateCamera();
-            });
+                elapsed += Time.deltaTime;
+                float t = elapsed / segmentDuration;
+
+                Vector3 currentPos = Vector3.Lerp(startPoint, endPoint, t);
+                transform.position = GetGroundPosition(currentPos);
+
+                yield return null;
+            }
+        }
+
+        animator.SetBool("RunningStart", false);
+        animator.SetBool("RunningEnd", true);
+        transform.position = GetGroundPosition(path[path.Count - 1]);
+
+        hasMovedToLocation = true;
+        // animator.runtimeAnimatorController = idleAnimatorController;
+        transform.position = GetGroundPosition(transform.position);
+        isNearDragon = false;
+        SetButtonStatus();
+        RotateCamera();
+    }
+    private Vector3 previousPosition;
+    [ContextMenu("Return To Fishing Site")]
+    public void ReturnToFishingSite()
+    {
+        StartCoroutine(ReturnToFishingSiteRoutine(4f));
+        // hasMovedToLocation = false;
+        // SoundController.Instance.PlaySFX(SoundType.Walking);
+        // List<Vector3> path = new List<Vector3>();
+        // movementButton.gameObject.SetActive(false);
+        // feedButton.gameObject.SetActive(false);
+
+        // for (int i = wayToBarrel.Count - 1; i >= 0; i--)
+        // {
+        //     path.Add(GetGroundPosition(wayToBarrel[i].position));
+        // }
+
+        // path.Add(GetGroundPosition(targetLocation) + Vector3.up);
+        // // 🎥 Reset camera (same as before)
+        // ResetCameraLocalTween();
+        // // ✅ ONLY HERE we lock rotation (your desired angle)
+        // transform.eulerAngles = new Vector3(0, 180, 0); // change if needed
+        // // animator.runtimeAnimatorController = runningAnimatorController;
+        // transform.DOPath(path.ToArray(), 4f, PathType.CatmullRom)
+        //     .SetEase(Ease.Linear)
+        //     .SetOptions(false) // important: no auto rotation
+        //     .OnComplete(() =>
+        //     {
+        //         hasMovedToLocation = true;
+        //         // animator.runtimeAnimatorController = idleAnimatorController;
+        //         transform.position = GetGroundPosition(transform.position) + Vector3.up;
+        //         isNearDragon = false;
+        //         SetButtonStatus();
+        //         RotateCamera();
+        //     });
     }
     void StartReturnMovement()
     {
@@ -370,6 +509,7 @@ public class Fisherman : MonoBehaviour
     }
     Tween RotateCameraLocalTween()
     {
+        return null;
         if (!isFollowingCamera || Camera.main == null) return null;
 
         Transform cam = Camera.main.transform;
@@ -384,6 +524,7 @@ public class Fisherman : MonoBehaviour
     }
     Tween ResetCameraLocalTween()
     {
+        return null;
         if (!isFollowingCamera || Camera.main == null) return null;
 
         Transform cam = Camera.main.transform;
@@ -421,7 +562,7 @@ public class Fisherman : MonoBehaviour
             movementButton.onClick.RemoveAllListeners();
             movementButton.onClick.AddListener(MoveToBarrel);
         }
-        movementButton.gameObject.SetActive(coughtFishCount > 0);
+        movementButton.gameObject.SetActive(coughtFishCount > 0 && isFollowingCamera);
     }
 
     public void MoveFishToDragon(int fishCountToRemove = 0)
@@ -465,11 +606,11 @@ public class Fisherman : MonoBehaviour
 
             Destroy(fish);
 
+            // 💰 Give gold for ONE fish
+            CurrencyHandler.Instance.AddGoldFromFish(1);
             // 🐉 Feed dragon ONE fish
             dragon.FeedFishOneByOne(1);
 
-            // 💰 Give gold for ONE fish
-            CurrencyHandler.Instance.AddGoldFromFish(1);
 
             yield return new WaitForSeconds(0.25f); // spacing between feeds
         }
@@ -482,4 +623,50 @@ public class Fisherman : MonoBehaviour
         MoveFishToDragon((int)coughtFishCount);
     }
 
+    internal void MoveToPosition(Transform parent)
+    {
+        StartCoroutine(MoveToPositionRoutineAfterPurchase(parent));
+    }
+
+    public IEnumerator MoveToPositionRoutineAfterPurchase(Transform parent, float duration = 1f)
+    {
+        hasMovedToLocation = false;
+        SoundController.Instance.PlaySFX(SoundType.Walking);
+        animator.SetBool("RunningStart", true);
+        animator.SetBool("RunningEnd", false);
+        transform.SetParent(parent);
+        yield return null; // Wait one frame for parent change to take effect
+        transform.localRotation = Quaternion.identity; // Reset rotation to match parent
+        Vector3 startPos = transform.localPosition;
+        Vector3 endPos = Vector3.zero;
+        float elapsed = 0f;
+
+        // Initial snap to ground
+        transform.localPosition = GetGroundPosition(transform.localPosition);
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            float percent = elapsed / duration;
+
+            // 1. Calculate the horizontal/linear interpolation
+            Vector3 currentPos = Vector3.Lerp(startPos, endPos, percent);
+
+            // 2. Sample the ground height at this specific point every frame
+            // This prevents the "hovering" effect over dips or hills
+            transform.localPosition = GetGroundPosition(currentPos);
+
+            yield return null;
+        }
+
+        // Ensure we land exactly at the target grounded position
+        transform.localPosition = GetGroundPosition(endPos);
+        transform.localRotation = Quaternion.identity; // Reset rotation to match parent
+        // Final logic previously in .OnComplete
+        hasMovedToLocation = true;
+        animator.SetBool("RunningStart", false);
+        animator.SetBool("RunningEnd", true);
+        // Optional: Keep your safety offset if needed
+        // transform.position += Vector3.up * 0.1f; 
+    }
 }

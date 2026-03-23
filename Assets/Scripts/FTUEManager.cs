@@ -1,5 +1,6 @@
 using UnityEngine;
 using System;
+using System.Collections;
 
 public class FTUEManager : MonoBehaviour
 {
@@ -10,7 +11,7 @@ public class FTUEManager : MonoBehaviour
     [Header("FTUE Objects")]
     [SerializeField] private GameObject startFTUE;   // Drag hand
     [SerializeField] private GameObject feedFTUE;    // Feed dragon hint
-
+    private Coroutine startFtueCoroutine;
     private void Awake()
     {
         if (Instance == null)
@@ -24,7 +25,14 @@ public class FTUEManager : MonoBehaviour
 
     private void Start()
     {
-        Invoke(nameof(ShowStartFTUE), 5.5f);
+        // change this to coroutine and store the coroutine
+        startFtueCoroutine = StartCoroutine(DelayedStartFTUE());
+    }
+
+    private IEnumerator DelayedStartFTUE()
+    {
+        yield return new WaitForSeconds(5.5f);
+        ShowStartFTUE();
     }
 
     // 🟢 START FTUE
@@ -43,6 +51,7 @@ public class FTUEManager : MonoBehaviour
             startFTUE.SetActive(false);
             OnFTUEStopped?.Invoke();
         }
+        StopCoroutine(startFtueCoroutine); // Stop the coroutine if it's still running
     }
 
     // 🟡 SHOW FEED FTUE (when barrel full)
