@@ -17,7 +17,6 @@ public class Fisherman : MonoBehaviour
     [SerializeField] private bool isFollowingCamera = false;
     [SerializeField] private Animator animator;
     [SerializeField] private TextMeshProUGUI fishCountText, movementButtonText;
-    [SerializeField] private AnimatorController runningAnimatorController, idleAnimatorController;
     
     [SerializeField] private Vector3 targetLocation, startingLocation;
     [SerializeField] private Vector3 cameraPositionOffset, cameraRotationOffset;
@@ -74,6 +73,8 @@ public class Fisherman : MonoBehaviour
         if (!isFishing) {
             timer = 0;
             isFishing = true;
+            animator.SetBool("IsFishing", true);
+            DOVirtual.DelayedCall(0.1f, () => animator.SetBool("IsFishing", false));
             FTUEManager.Instance.StopStartFTUE();
         }
     }
@@ -111,28 +112,66 @@ public class Fisherman : MonoBehaviour
     
     public void MoveFromToLocation()
     {
-        animator.runtimeAnimatorController = runningAnimatorController;
-        hasMovedToLocation = false;
+        // //animator.runtimeAnimatorController = runningAnimatorController;
+        // hasMovedToLocation = false;
 
+        // SoundController.Instance.PlaySFX(SoundType.Walking);
+
+        // // Snap starting position to ground
+        // Vector3 groundedStart = GetGroundPosition(startingLocation);
+        // transform.position = groundedStart;
+
+        // // Snap target position to ground
+        // Vector3 groundedTarget = GetGroundPosition(targetLocation);
+
+        // // Move to grounded target
+        // transform.DOMove(groundedTarget, 3f).OnComplete(() =>
+        // {
+        //     hasMovedToLocation = true;
+        //     if(isFollowingCamera) RotateCamera();
+
+        //     // Final snap (safety)
+        //     transform.position = GetGroundPosition(groundedTarget) + Vector3.up; // Slightly above ground to avoid clipping
+        // });
+        StartCoroutine(MoveRoutine(2f));
+    }
+
+    private IEnumerator MoveRoutine(float duration)
+    {
+        hasMovedToLocation = false;
         SoundController.Instance.PlaySFX(SoundType.Walking);
 
-        // Snap starting position to ground
-        Vector3 groundedStart = GetGroundPosition(startingLocation);
-        transform.position = groundedStart;
+        Vector3 startPos = startingLocation;
+        Vector3 endPos = targetLocation;
+        float elapsed = 0f;
 
-        // Snap target position to ground
-        Vector3 groundedTarget = GetGroundPosition(targetLocation);
+        // Initial snap to ground
+        transform.position = GetGroundPosition(startPos);
 
-        // Move to grounded target
-        transform.DOMove(groundedTarget, 3f).OnComplete(() =>
+        while (elapsed < duration)
         {
-            hasMovedToLocation = true;
-            animator.runtimeAnimatorController = idleAnimatorController;
-            if(isFollowingCamera) RotateCamera();
+            elapsed += Time.deltaTime;
+            float percent = elapsed / duration;
 
-            // Final snap (safety)
-            transform.position = GetGroundPosition(groundedTarget) + Vector3.up; // Slightly above ground to avoid clipping
-        });
+            // 1. Calculate the horizontal/linear interpolation
+            Vector3 currentPos = Vector3.Lerp(startPos, endPos, percent);
+
+            // 2. Sample the ground height at this specific point every frame
+            // This prevents the "hovering" effect over dips or hills
+            transform.position = GetGroundPosition(currentPos);
+
+            yield return null;
+        }
+
+        // Ensure we land exactly at the target grounded position
+        transform.position = GetGroundPosition(endPos);
+        
+        // Final logic previously in .OnComplete
+        hasMovedToLocation = true;
+        if (isFollowingCamera) RotateCamera();
+        
+        // Optional: Keep your safety offset if needed
+        // transform.position += Vector3.up * 0.1f; 
     }
 
     private void RotateCamera()
@@ -153,7 +192,7 @@ public class Fisherman : MonoBehaviour
 
     private Vector3 GetGroundPosition(Vector3 position)
     {
-        Ray ray = new Ray(position + Vector3.up * 1f, Vector3.down);
+        Ray ray = new Ray(position + Vector3.up * 0.5f, Vector3.down);
 
         if (Physics.Raycast(ray, out RaycastHit hit, 20f))
         {
@@ -165,7 +204,7 @@ public class Fisherman : MonoBehaviour
 
     internal void MoveToLocation(Vector3 startLocation)
     {
-        animator.runtimeAnimatorController = runningAnimatorController;
+        // animator.runtimeAnimatorController = runningAnimatorController;
         hasMovedToLocation = false;
         targetLocation = transform.position; // Current position is the target
         startingLocation = startLocation;
@@ -173,7 +212,7 @@ public class Fisherman : MonoBehaviour
         transform.position = startingLocation; // Move to starting point first
         transform.DOMove(targetLocation, 1f).OnComplete(() => {
             hasMovedToLocation = true;
-            animator.runtimeAnimatorController = idleAnimatorController;
+            // animator.runtimeAnimatorController = idleAnimatorController;
         });
     }
 
@@ -196,7 +235,7 @@ public class Fisherman : MonoBehaviour
         // 🔄 STEP 1: Rotate player instantly (NO tween conflict)
         transform.rotation = GetLookRotation(path[0]);
         // 🏃 STEP 2: Start movement immediately
-        animator.runtimeAnimatorController = runningAnimatorController;
+        //animator.runtimeAnimatorController = runningAnimatorController;
         transform.DOPath(path, 4f, PathType.CatmullRom)
             .SetEase(Ease.Linear)
             .SetOptions(false) // 🔥 IMPORTANT: disables automatic rotation
@@ -204,7 +243,7 @@ public class Fisherman : MonoBehaviour
             .OnComplete(() =>
             {
                 hasMovedToLocation = true;
-                animator.runtimeAnimatorController = idleAnimatorController;
+                // animator.runtimeAnimatorController = idleAnimatorController;
                 isNearDragon = true;
                 SetButtonStatus();
                 feedButton.gameObject.SetActive(true);
@@ -263,14 +302,14 @@ public class Fisherman : MonoBehaviour
         ResetCameraLocalTween();
         // ✅ ONLY HERE we lock rotation (your desired angle)
         transform.eulerAngles = new Vector3(0, 180, 0); // change if needed
-        animator.runtimeAnimatorController = runningAnimatorController;
+        // animator.runtimeAnimatorController = runningAnimatorController;
         transform.DOPath(path.ToArray(), 4f, PathType.CatmullRom)
             .SetEase(Ease.Linear)
             .SetOptions(false) // important: no auto rotation
             .OnComplete(() =>
             {
                 hasMovedToLocation = true;
-                animator.runtimeAnimatorController = idleAnimatorController;
+                // animator.runtimeAnimatorController = idleAnimatorController;
                 transform.position = GetGroundPosition(transform.position) + Vector3.up;
                 isNearDragon = false;
                 SetButtonStatus();
@@ -290,7 +329,7 @@ public class Fisherman : MonoBehaviour
 
         transform.rotation = GetLookRotation(path[0]);
 
-        animator.runtimeAnimatorController = runningAnimatorController;
+        // animator.runtimeAnimatorController = runningAnimatorController;
 
         transform.DOPath(path.ToArray(), 4f, PathType.CatmullRom)
             .SetEase(Ease.Linear)
@@ -299,7 +338,7 @@ public class Fisherman : MonoBehaviour
             .OnComplete(() =>
             {
                 hasMovedToLocation = true;
-                animator.runtimeAnimatorController = idleAnimatorController;
+                // animator.runtimeAnimatorController = idleAnimatorController;
 
                 transform.position = GetGroundPosition(transform.position) + Vector3.up;
             });
