@@ -83,10 +83,23 @@ public class Fisherman : MonoBehaviour
         }
     }
 
-    void CompleteCatch()
+    public void CompleteCatch()
     {
         timer = 0;
-        StartCoroutine(MoveFishToInventory());
+        if(isFollowingCamera) StartCoroutine(MoveFishToInventory());
+        else 
+        {
+            firstFisherMan.CountOtherFishermanFish();
+            StopFishing();
+            isNearDragon = false;
+        }
+    }
+
+    public void CountOtherFishermanFish()
+    {
+        coughtFishCount++;
+        fishCountText.text = "x" + coughtFishCount;
+        SetButtonStatus();
     }
 
     IEnumerator MoveFishToInventory()
@@ -668,5 +681,10 @@ public class Fisherman : MonoBehaviour
         animator.SetBool("RunningEnd", true);
         // Optional: Keep your safety offset if needed
         // transform.position += Vector3.up * 0.1f; 
+    }
+    private Fisherman firstFisherMan;
+    internal void SetFirstFisherman(Fisherman firstFisherman)
+    {
+        this.firstFisherMan = firstFisherman;
     }
 }

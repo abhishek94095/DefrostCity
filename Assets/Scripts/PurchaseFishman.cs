@@ -10,6 +10,7 @@ public class PurchaseFishman : MonoBehaviour
     [SerializeField] private Fisherman fishermanPrefab;
     [SerializeField] private Transform spawnPoint;
     [SerializeField] private Transform[] finalPositions;
+    [SerializeField] private Fisherman firstFisherman; // Reference to the first fisherman in the scene
     public int cost = 40; // Cost to purchase a fisherman
     private int fishermenPurchased = 0;
     public void OnEnable()
@@ -46,5 +47,6 @@ public class PurchaseFishman : MonoBehaviour
 
         Fisherman newFisherman = Instantiate(fishermanPrefab, spawnPoint.position, Quaternion.identity);
         newFisherman.MoveToPosition(finalPositions[fishermenPurchased - 1]);
+        newFisherman.SetFirstFisherman(firstFisherman); // Set reference to the first fisherman
     }
 }

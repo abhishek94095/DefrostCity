@@ -1,3 +1,5 @@
+using System;
+using DG.Tweening;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -10,7 +12,12 @@ public class DragonController : MonoBehaviour
     public GameObject endScreen, DragonLevel2;
     public GameObject villagerAnimation; // Visual for "freeing villagers"
     public Transform startingPoint;
+    public GameObject flameThrowEffect;
     public GameObject[] currentDragonObjects;
+    public Transform[] snowLevel2ObjectToLowerLeft, snowLevel2ObjectToLowerRight, snowLevel3ObjectToLowerLeft, snowLevel3ObjectToLowerRight;
+    public Transform[] grassLevel2ObjectToLowerLeft, grassLevel2ObjectToLowerRight, grassLevel3ObjectToLowerLeft, grassLevel3ObjectToLowerRight;
+    public Vector3 lowerPoint;
+    public Transform level2GrassPatchParent, level3GrassPatchParent, level2SnowPatchParent, level3SnowPathParent; 
     public int[] requirements = { 2, 5, 10 }; // Fish needed for Stage 1, 2, 3
     private int fishFed = 0;
 
@@ -20,10 +27,14 @@ public class DragonController : MonoBehaviour
         fishFed = 0;
         // dragonAnimator.Play("Grow_2");
         SoundController.Instance.PlaySFX(SoundType.Upgrade);
-
+        flameThrowEffect.SetActive(true); // Show flame effect during upgrade
+        DOVirtual.DelayedCall(2f, () => flameThrowEffect.SetActive(false)); // Hide effect after 1.5 seconds
+        DOVirtual.DelayedCall(3.75f, () => flameThrowEffect.SetActive(true)); // Hide effect after 1.5 seconds
+        DOVirtual.DelayedCall(5.5f, () => flameThrowEffect.SetActive(false)); // Hide effect after 1.5 seconds
         // 2. Run action: Freeing villagers
         if (villagerAnimation != null) villagerAnimation.SetActive(true);
-
+        MoveSnowDown();
+        //EnableGrassObjectAndDisableSnowObject();
         // 3. Increment stage and spawn more fishermen
         if (currentStage < 2)
         {
@@ -38,6 +49,73 @@ public class DragonController : MonoBehaviour
         else
         {
             FinalWin(); // End screen on last stage
+        }
+    }
+
+    [ContextMenu("Level up")]
+    public void MoveSnowDown()
+    {
+        if(currentStage == 1)
+        {
+            level2GrassPatchParent.DOMove(lowerPoint + level2GrassPatchParent.position, 1f);
+            DOVirtual.DelayedCall(1f, () => level2SnowPatchParent.gameObject.SetActive(false));
+        }
+        if(currentStage == 2)
+        {
+            level3GrassPatchParent.DOMove(lowerPoint + level3GrassPatchParent.position, 1f);
+            DOVirtual.DelayedCall(1f, () => level3SnowPathParent.gameObject.SetActive(false));
+        }
+    }
+
+    private void EnableGrassObjectAndDisableSnowObject()
+    {
+        if(currentStage == 1)
+        {
+            foreach(Transform grassObject in grassLevel2ObjectToLowerLeft)
+            {
+                grassObject.gameObject.SetActive(true);
+            }
+            foreach(Transform snowObject in snowLevel2ObjectToLowerLeft)
+            {
+                snowObject.DOMove(snowObject.position + lowerPoint, 2f);
+                DOVirtual.DelayedCall(1f, () =>snowObject.gameObject.SetActive(false));
+            }
+            DOVirtual.DelayedCall(3.75f, () => 
+            {
+                foreach(Transform grassObject in grassLevel2ObjectToLowerRight)
+                {
+                    grassObject.gameObject.SetActive(true);
+                }
+                foreach(Transform snowObject in snowLevel2ObjectToLowerRight)
+                {
+                    snowObject.DOMove(snowObject.position + lowerPoint, 2f);
+                    DOVirtual.DelayedCall(1f, () =>snowObject.gameObject.SetActive(false));
+                }
+            });
+        }
+        if(currentStage == 2)
+        {
+            foreach(Transform grassObject in grassLevel3ObjectToLowerLeft)
+            {
+                grassObject.gameObject.SetActive(true);
+            }
+            foreach(Transform snowObject in snowLevel3ObjectToLowerLeft)
+            {
+                snowObject.DOMove(snowObject.position + lowerPoint, 2f);
+                DOVirtual.DelayedCall(1f, () =>snowObject.gameObject.SetActive(false));
+            }
+            DOVirtual.DelayedCall(3.75f, () => 
+            {
+                foreach(Transform grassObject in grassLevel3ObjectToLowerRight)
+                {
+                    grassObject.gameObject.SetActive(true);
+                }
+                foreach(Transform snowObject in snowLevel3ObjectToLowerRight)
+                {
+                    snowObject.DOMove(snowObject.position + lowerPoint, 2f);
+                    DOVirtual.DelayedCall(1f, () =>snowObject.gameObject.SetActive(false));
+                }
+            });
         }
     }
 
