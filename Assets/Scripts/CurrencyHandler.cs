@@ -7,7 +7,7 @@ public class CurrencyHandler : MonoBehaviour
     public static CurrencyHandler Instance;
 
     public int currentGold = 0;
-    [SerializeField] private int goldPerFish = 10; // 🔥 configurable
+    [SerializeField] private int goldPerFish = 5; // 🔥 configurable
     [SerializeField] private TextMeshProUGUI goldText;
 
     public Action<int> OnGoldChanged;

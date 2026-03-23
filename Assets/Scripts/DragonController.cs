@@ -1,5 +1,6 @@
 using System;
 using DG.Tweening;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -12,6 +13,8 @@ public class DragonController : MonoBehaviour
     public GameObject endScreen, DragonLevel2;
     public GameObject villagerAnimation; // Visual for "freeing villagers"
     public Transform startingPoint;
+    public TextMeshProUGUI fishCountText;
+    public Image fishBGFill;
     public GameObject flameThrowEffect;
     public GameObject[] currentDragonObjects;
     public Transform[] snowLevel2ObjectToLowerLeft, snowLevel2ObjectToLowerRight, snowLevel3ObjectToLowerLeft, snowLevel3ObjectToLowerRight;
@@ -25,6 +28,7 @@ public class DragonController : MonoBehaviour
     {
         // 1. Play Growing/Eating Animation
         fishFed = 0;
+        CurrencyHandler.Instance.AddGoldFromFish(3);
         // dragonAnimator.Play("Grow_2");
         SoundController.Instance.PlaySFX(SoundType.Upgrade);
         flameThrowEffect.SetActive(true); // Show flame effect during upgrade
@@ -45,6 +49,7 @@ public class DragonController : MonoBehaviour
             dragonAnimator.SetTrigger("Firebreath_L"); // Play upgrade animation
             //SpawnFishermen(spawnPoints.Length); // Spawns more as dragon grows
             currentStage++;
+            fishCountText.text = Math.Max(0,requirements[currentStage - 1] - fishFed).ToString(); // Update UI with remaining fish needed
         }
         else
         {
@@ -119,12 +124,15 @@ public class DragonController : MonoBehaviour
         }
     }
 
-    public void FeedFishOneByOne(int fishAmount)
+    public void FeedFishOneByOne(int fishAmount, bool canAddCoins)
     {
         if (fishAmount <= 0) return;
         fishFed += fishAmount;
+        fishBGFill.fillAmount = 1f - (float)fishFed / (float)requirements[currentStage - 1] ;
+        fishCountText.text = Math.Max(0,requirements[currentStage - 1] - fishFed).ToString(); // Update UI with remaining fish needed
         // 🔥 Play animation per fish
         SoundController.Instance.PlaySFX(SoundType.Feed);
+        if(canAddCoins) CurrencyHandler.Instance.AddGoldFromFish(1);
         if (fishFed >= requirements[currentStage - 1])
         {
             UpgradeDragon();

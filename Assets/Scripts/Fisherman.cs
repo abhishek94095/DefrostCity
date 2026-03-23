@@ -13,7 +13,7 @@ public class Fisherman : MonoBehaviour
     public float catchTime = 3.0f;
     public Image progressCircle; // UI Image with Fill Method: Radial 360
     public GameObject fishPrefab;
-    public Transform inventoryTransform;
+    public Transform inventoryTransform, fishSpawnPoint;
     [SerializeField] private bool isFollowingCamera = false;
     [SerializeField] private Animator animator;
     [SerializeField] private TextMeshProUGUI fishCountText, movementButtonText;
@@ -77,6 +77,7 @@ public class Fisherman : MonoBehaviour
         if (!isFishing) {
             timer = 0;
             isFishing = true;
+            animator.SetBool("RunningEnd", false);
             animator.SetBool("IsFishing", true);
             DOVirtual.DelayedCall(0.1f, () => animator.SetBool("IsFishing", false));
             FTUEManager.Instance.StopStartFTUE();
@@ -98,22 +99,22 @@ public class Fisherman : MonoBehaviour
     public void CountOtherFishermanFish()
     {
         coughtFishCount++;
-        fishCountText.text = "x" + coughtFishCount;
+        fishCountText.text = coughtFishCount.ToString();
         SetButtonStatus();
     }
 
     IEnumerator MoveFishToInventory()
     {
-        GameObject fish = Instantiate(fishPrefab, transform.position, Quaternion.identity);
+        GameObject fish = Instantiate(fishPrefab, fishSpawnPoint.position, Quaternion.identity);
         SoundController.Instance.PlaySFX(SoundType.FishCatch);
         float elapsed = 0;
         float duration = 0.5f;
         StopFishing();
         progressCircle.fillAmount = 0;
         coughtFishCount++;
-        fishCountText.text = "x" + coughtFishCount;
+        fishCountText.text = coughtFishCount.ToString();
         isNearDragon = false;
-        SetButtonStatus();
+        DOVirtual.DelayedCall(0.5f, SetButtonStatus);
         while (elapsed < duration)
         {
             fish.transform.position = Vector3.MoveTowards(fish.transform.position, inventoryTransform.position, 10f * Time.deltaTime);
@@ -237,17 +238,18 @@ public class Fisherman : MonoBehaviour
     }
     private IEnumerator MoveToBarrelRoutine(float duration)
     {
+        yield return new WaitForSeconds(purchaseIndex * 0.2f);
         hasMovedToLocation = false;
         movementButton.gameObject.SetActive(false);
         SoundController.Instance.PlaySFX(SoundType.Walking);
         
         List<Vector3> path = new List<Vector3>();
-        path.Add(transform.position); 
+        path.Add(transform.position);
+        goToBarrel?.Invoke();
         for (int i = 0; i < wayToBarrel.Count; i++)
         {
             path.Add(wayToBarrel[i].position);
         }
-        
         // Calculate total path distance to keep speed constant
         float totalDistance = 0;
         for (int i = 0; i < path.Count - 1; i++)
@@ -371,6 +373,7 @@ public class Fisherman : MonoBehaviour
     private IEnumerator ReturnToFishingSiteRoutine(float duration)
     {
         hasMovedToLocation = false;
+        goToFishingSpot?.Invoke();
         SoundController.Instance.PlaySFX(SoundType.Walking);
         animator.SetBool("RunningStart", true);
         DOVirtual.DelayedCall(0.5f, () => animator.SetBool("RunningStart", false));
@@ -478,11 +481,8 @@ public class Fisherman : MonoBehaviour
         }
 
         path.Add(GetGroundPosition(targetLocation) + Vector3.up);
-
         transform.rotation = GetLookRotation(path[0]);
-
         // animator.runtimeAnimatorController = runningAnimatorController;
-
         transform.DOPath(path.ToArray(), 4f, PathType.CatmullRom)
             .SetEase(Ease.Linear)
             .SetOptions(false)
@@ -575,7 +575,7 @@ public class Fisherman : MonoBehaviour
             movementButton.onClick.RemoveAllListeners();
             movementButton.onClick.AddListener(MoveToBarrel);
         }
-        movementButton.gameObject.SetActive(coughtFishCount > 0 && isFollowingCamera);
+        movementButton.gameObject.SetActive(coughtFishCount > 3 && isFollowingCamera);
     }
 
     public void MoveFishToDragon(int fishCountToRemove = 0)
@@ -592,7 +592,7 @@ public class Fisherman : MonoBehaviour
 
             // 🔻 Reduce fish
             coughtFishCount--;
-            fishCountText.text = "x" + coughtFishCount;
+            fishCountText.text = coughtFishCount.ToString();
 
             // 🐟 Spawn fish
             GameObject fish = Instantiate(fishPrefab, transform.position, Quaternion.identity);
@@ -620,12 +620,12 @@ public class Fisherman : MonoBehaviour
             Destroy(fish);
 
             // 💰 Give gold for ONE fish
-            CurrencyHandler.Instance.AddGoldFromFish(1);
+            // CurrencyHandler.Instance.AddGoldFromFish(1);
             // 🐉 Feed dragon ONE fish
-            dragon.FeedFishOneByOne(1);
+            dragon.FeedFishOneByOne(1, i == 0);
 
 
-            yield return new WaitForSeconds(0.25f); // spacing between feeds
+            yield return new WaitForSeconds(0.1f); // spacing between feeds
         }
     }
 
@@ -679,12 +679,16 @@ public class Fisherman : MonoBehaviour
         hasMovedToLocation = true;
         animator.SetBool("RunningStart", false);
         animator.SetBool("RunningEnd", true);
+        targetLocation = transform.position;
         // Optional: Keep your safety offset if needed
         // transform.position += Vector3.up * 0.1f; 
     }
     private Fisherman firstFisherMan;
-    internal void SetFirstFisherman(Fisherman firstFisherman)
+    private int purchaseIndex;
+    public Action goToBarrel, goToFishingSpot;
+    internal void SetFirstFisherman(Fisherman firstFisherman, int index)
     {
         this.firstFisherMan = firstFisherman;
+        purchaseIndex = index;
     }
 }
