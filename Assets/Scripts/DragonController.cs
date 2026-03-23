@@ -7,9 +7,10 @@ public class DragonController : MonoBehaviour
     public Animator dragonAnimator;
     public GameObject fishermanPrefab;
     public Transform[] spawnPoints;
-    public GameObject endScreen;
+    public GameObject endScreen, DragonLevel2;
     public GameObject villagerAnimation; // Visual for "freeing villagers"
     public Transform startingPoint;
+    public GameObject[] currentDragonObjects;
     public int[] requirements = { 2, 5, 10 }; // Fish needed for Stage 1, 2, 3
     private int fishFed = 0;
 
@@ -17,7 +18,7 @@ public class DragonController : MonoBehaviour
     {
         // 1. Play Growing/Eating Animation
         fishFed = 0;
-        dragonAnimator.Play("Grow_2");
+        // dragonAnimator.Play("Grow_2");
         SoundController.Instance.PlaySFX(SoundType.Upgrade);
 
         // 2. Run action: Freeing villagers
@@ -27,6 +28,10 @@ public class DragonController : MonoBehaviour
         if (currentStage < 2)
         {
             SoundController.Instance.PlaySFX(SoundType.FireBreath);
+            DragonLevel2.SetActive(true); // Show new dragon visuals
+            foreach (var obj in currentDragonObjects) obj.SetActive(false); // Hide old dragon visuals
+            dragonAnimator = DragonLevel2.GetComponent<Animator>(); // Switch to new animator
+            dragonAnimator.SetTrigger("Firebreath_L"); // Play upgrade animation
             //SpawnFishermen(spawnPoints.Length); // Spawns more as dragon grows
             currentStage++;
         }
