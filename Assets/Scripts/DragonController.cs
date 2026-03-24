@@ -179,5 +179,6 @@ public class DragonController : MonoBehaviour
         SoundController.Instance.PlaySFX(SoundType.Win);
         endVillageViewObject.gameObject.SetActive(true);
         DOVirtual.DelayedCall(4.1f, () => endVillageViewObject.gameObject.SetActive(false));
+        DOVirtual.DelayedCall(4.1f, () => endScreen.gameObject.SetActive(true));
     }
 }
