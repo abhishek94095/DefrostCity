@@ -14,15 +14,15 @@ public class Fisherman : MonoBehaviour
     public Image progressCircle; // UI Image with Fill Method: Radial 360
     public GameObject fishPrefab;
     public Transform inventoryTransform, fishSpawnPoint;
-    [SerializeField] private bool isFollowingCamera = false;
+    [SerializeField] private bool isFollowingCamera = false, forceFishOnClick = false;
     [SerializeField] private Animator animator;
-    [SerializeField] private TextMeshProUGUI fishCountText, movementButtonText;
+    [SerializeField] private TextMeshProUGUI fishCountText;
     
     [SerializeField] private Vector3 targetLocation, startingLocation;
     [SerializeField] private Vector3 cameraPositionOffset, cameraRotationOffset;
     [SerializeField] private float cameraFieldOfViewAfterSet = 30f;
     [SerializeField] private List<Transform> wayToBarrel;
-    [SerializeField] private Button movementButton, feedButton;
+    [SerializeField] private Button feedButton;
     [SerializeField] private DragonController dragon;
     [SerializeField] private Transform CharacterInfoBG;
     private const string nearDragonKey = "Go Fishing";
@@ -48,32 +48,82 @@ public class Fisherman : MonoBehaviour
             //Barrel.Instance.dragon.FeedButton.onClick.AddListener(() => FeedFishToDragon(this));
             MoveFromToLocation();
         }
-        else
-        {
-            movementButton.transform.parent.gameObject.SetActive(false); // Hide movement button if not following camera
-        }
 
     }
+    bool wasMoving = false;
 
     void Update()
     {
+        // 🎣 Fishing logic
         if (isFishing)
         {
             timer += Time.deltaTime;
-            if(progressCircle != null) progressCircle.fillAmount = timer / catchTime;
-            //FTUEManager.Instance.StopFeedFTUE();
+
+            if (progressCircle != null)
+                progressCircle.fillAmount = timer / catchTime;
 
             if (timer >= catchTime)
             {
                 CompleteCatch();
             }
-        }
-    }
 
+            // Ensure running is stopped when fishing starts
+            if (wasMoving)
+            {
+                animator.SetBool("RunningStart", false);
+                animator.SetBool("RunningEnd", true);
+                wasMoving = false;
+            }
+
+            return;
+        }
+
+        if (!isFollowingCamera)
+            return;
+
+        Vector2 input = joystick.Direction;
+        float inputMagnitude = input.magnitude;
+
+        bool isMoving = inputMagnitude > 0.1f;
+
+        // 🎯 Handle animation transitions ONLY on change
+        if (isMoving && !wasMoving)
+        {
+            // Started moving
+            animator.SetBool("RunningStart", true);
+            animator.SetBool("RunningEnd", false);
+            wasMoving = true;
+        }
+        else if (!isMoving && wasMoving)
+        {
+            // Stopped moving
+            animator.SetBool("RunningStart", false);
+            animator.SetBool("RunningEnd", true);
+            wasMoving = false;
+        }
+
+        // ✅ Movement
+        if (isMoving)
+        {
+            Vector3 move = new Vector3(input.x, 0f, input.y).normalized;
+
+            Vector3 targetPos = transform.position + move * speed * Time.deltaTime;
+            targetPos = GetGroundPosition(targetPos);
+
+            transform.position = targetPos;
+
+            Quaternion targetRot = Quaternion.LookRotation(move);
+            transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, 10f * Time.deltaTime);
+        }
+
+        HandleInteraction(inputMagnitude);
+    }
     // Manual click to start/speed up as requested
     public void OnMouseDown() 
     {
-        if(!hasMovedToLocation || isNearDragon) return; // Ignore clicks until fisherman has moved to location
+        if(forceFishOnClick) canFish = true;
+
+        if(!hasMovedToLocation || isNearDragon || !canFish) return; // Ignore clicks until fisherman has moved to location
 
         if (!isFishing) {
             timer = 0;
@@ -192,6 +242,7 @@ public class Fisherman : MonoBehaviour
         
         // Final logic previously in .OnComplete
         hasMovedToLocation = true;
+        isFishing = false;
         if (isFollowingCamera) RotateCamera();
         animator.SetBool("RunningStart", false);
         animator.SetBool("RunningEnd", true);
@@ -246,7 +297,6 @@ public class Fisherman : MonoBehaviour
     {
         yield return new WaitForSeconds(purchaseIndex * 0.2f);
         hasMovedToLocation = false;
-        movementButton.gameObject.SetActive(false);
         SoundController.Instance.PlaySFX(SoundType.Walking);
         Camera.main.DOOrthoSize(9.5f, 0.5f); 
         
@@ -388,7 +438,6 @@ public class Fisherman : MonoBehaviour
         animator.SetBool("RunningEnd", false);
         List<Vector3> path = new List<Vector3>();
         path.Add(transform.position); 
-        movementButton.gameObject.SetActive(false);
         //feedButton.gameObject.SetActive(false);
         CharacterInfoBG.eulerAngles += new Vector3(0,180,0);
 
@@ -573,19 +622,19 @@ public class Fisherman : MonoBehaviour
 
     public void SetButtonStatus()
     {
-        if(isNearDragon)
-        {
-            movementButtonText.text = nearDragonKey;
-            movementButton.onClick.RemoveAllListeners();
-            movementButton.onClick.AddListener(ReturnToFishingSite);
-        }
-        else
-        {
-            movementButtonText.text = nearPondKey;
-            movementButton.onClick.RemoveAllListeners();
-            movementButton.onClick.AddListener(MoveToBarrel);
-        }
-        movementButton.gameObject.SetActive(coughtFishCount > 3 && isFollowingCamera);
+        // if(isNearDragon)
+        // {
+        //     movementButtonText.text = nearDragonKey;
+        //     movementButton.onClick.RemoveAllListeners();
+        //     movementButton.onClick.AddListener(ReturnToFishingSite);
+        // }
+        // else
+        // {
+        //     movementButtonText.text = nearPondKey;
+        //     movementButton.onClick.RemoveAllListeners();
+        //     movementButton.onClick.AddListener(MoveToBarrel);
+        // }
+        // movementButton.gameObject.SetActive(coughtFishCount > 3 && isFollowingCamera);
     }
 
     public void MoveFishToDragon(int fishCountToRemove = 0)
@@ -626,16 +675,20 @@ public class Fisherman : MonoBehaviour
             // 💰 Give gold for ONE fish
             // CurrencyHandler.Instance.AddGoldFromFish(1);
             // 🐉 Feed dragon ONE fish
-            dragon.FeedFishOneByOne(1, i == 0);
+            dragon.FeedFishOneByOne(1);
             yield return new WaitForSeconds(0.1f); // spacing between feeds
         }
+        isFeeding = false;
     }
 
     private List<GameObject> spawnedFish = new List<GameObject>();
+    bool isFeeding = false;
     public void FeedFishToDragon(Fisherman fisherman)
     {
         //int fishToFeed = (int) MathF.Min(fisherman.coughtFishCount, (float) Barrel.Instance.requirements[Barrel.Instance.dragon.currentStage - 1]);
         //FTUEManager.Instance.StopFeedFTUE();
+        if(isFeeding) return;
+        isFeeding = true;
         MoveFishToDragon((int)coughtFishCount);
     }
 
@@ -693,5 +746,101 @@ public class Fisherman : MonoBehaviour
     {
         this.firstFisherMan = firstFisherman;
         purchaseIndex = index;
+    }
+
+    public float speed = 5f;
+    public Joystick joystick;
+
+    private InteractionType currentZone = InteractionType.None;
+
+    void HandleInteraction(float inputMagnitude)
+    {
+        // Consider "stopped" when input < 20%
+        bool isStopped = inputMagnitude < 0.2f;
+
+        // ⏱ Track idle time
+        if (isStopped)
+        {
+            idleTimer += Time.deltaTime;
+        }
+        else
+        {
+            // Reset when player moves
+            idleTimer = 0f;
+            hasTriggeredInteraction = false;
+            return;
+        }
+
+        // ⛔ Wait before triggering (prevents instant activation)
+        if (idleTimer < 0.5f || hasTriggeredInteraction)
+            return;
+
+        hasTriggeredInteraction = true;
+
+        switch (currentZone)
+        {
+            case InteractionType.Dragon:
+                FeedFishToDragon(this);
+                break;
+
+            case InteractionType.Fisherman:
+                OnPurchaseButtonClick();
+                break;
+
+            case InteractionType.FishingArea:
+                if (!isFishing)
+                    StartFishing();
+                break;
+        }
+    }
+float idleTimer = 0f;
+bool hasTriggeredInteraction = false;
+    void StartFishing()
+    {
+        canFish = true;
+        if (isFishing) return;
+
+        isFishing = true;
+        Debug.Log("Started Fishing");
+        // OnMouseDown();
+    }
+
+    private void OnTriggerEnter(Collider other)
+    {
+        InteractionZone zone = other.GetComponent<InteractionZone>();
+        if (zone != null)
+        {
+            currentZone = zone.type;
+            if(zone.type == InteractionType.Fisherman) canFish = true;
+        }
+    }
+
+    void OnTriggerStay(Collider other)
+    {
+        InteractionZone zone = other.GetComponent<InteractionZone>();
+        if (zone != null)
+        {
+            if(zone.type == InteractionType.Fisherman) canFish = true;
+        }
+    }
+    bool canFish = false;
+    private void OnTriggerExit(Collider other)
+    {
+        InteractionZone zone = other.GetComponent<InteractionZone>();
+        if (zone != null && zone.type == currentZone)
+        {
+            currentZone = InteractionType.None;
+            canFish = false;
+            // Stop fishing when leaving area
+            if (isFishing)
+                StopFishing();
+        }
+    }
+
+    public PurchaseFishman purchaseFishman;
+    // Dummy methods (hook your actual logic)
+    void OnPurchaseButtonClick()
+    {
+        purchaseFishman.OnPurchaseButtonClick();
     }
 }

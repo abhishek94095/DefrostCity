@@ -39,6 +39,8 @@ public class PurchaseFishman : MonoBehaviour
 
     public void OnPurchaseButtonClick()
     {
+        if(CurrencyHandler.Instance.currentGold < cost) return;
+        
         CurrencyHandler.Instance.SpendGold(cost);
         fishermenPurchased++;
         SpawnFisherman();

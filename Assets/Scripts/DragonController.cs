@@ -29,7 +29,7 @@ public class DragonController : MonoBehaviour
     {
         // 1. Play Growing/Eating Animation
         fishFed = 0;
-        CurrencyHandler.Instance.AddGoldFromFish(3);
+        CurrencyHandler.Instance.AddGoldFromFish(4);
         // dragonAnimator.Play("Grow_2");
         SoundController.Instance.PlaySFX(SoundType.Upgrade);
         flameThrowEffect.SetActive(true); // Show flame effect during upgrade
@@ -126,7 +126,8 @@ public class DragonController : MonoBehaviour
         }
     }
 
-    public void FeedFishOneByOne(int fishAmount, bool canAddCoins)
+    public bool canAddCoins = true;
+    public void FeedFishOneByOne(int fishAmount)
     {
         if (fishAmount <= 0) return;
         fishFed += fishAmount;
@@ -134,7 +135,11 @@ public class DragonController : MonoBehaviour
         fishCountText.text = Math.Max(0,requirements[currentStage - 1] - fishFed).ToString(); // Update UI with remaining fish needed
         // 🔥 Play animation per fish
         SoundController.Instance.PlaySFX(SoundType.Feed);
-        if(canAddCoins) CurrencyHandler.Instance.AddGoldFromFish(1);
+        if(canAddCoins) 
+        {
+            canAddCoins = false;
+            CurrencyHandler.Instance.AddGoldFromFish(1);
+        }
         if (fishFed >= requirements[currentStage - 1])
         {
             UpgradeDragon();
