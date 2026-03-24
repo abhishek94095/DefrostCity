@@ -151,7 +151,7 @@ public class Fisherman : MonoBehaviour
         //     // Final snap (safety)
         //     transform.position = GetGroundPosition(groundedTarget) + Vector3.up; // Slightly above ground to avoid clipping
         // });
-        StartCoroutine(MoveRoutine(2f));
+        StartCoroutine(MoveRoutine(1f));
     }
 
     private IEnumerator MoveRoutine(float duration)
@@ -190,6 +190,7 @@ public class Fisherman : MonoBehaviour
         if (isFollowingCamera) RotateCamera();
         animator.SetBool("RunningStart", false);
         animator.SetBool("RunningEnd", true);
+        Camera.main.DOOrthoSize(7.5f, 0.5f); 
         // Optional: Keep your safety offset if needed
         // transform.position += Vector3.up * 0.1f; 
     }
@@ -242,6 +243,7 @@ public class Fisherman : MonoBehaviour
         hasMovedToLocation = false;
         movementButton.gameObject.SetActive(false);
         SoundController.Instance.PlaySFX(SoundType.Walking);
+        Camera.main.DOOrthoSize(9.5f, 0.5f); 
         
         List<Vector3> path = new List<Vector3>();
         path.Add(transform.position);
@@ -307,7 +309,7 @@ public class Fisherman : MonoBehaviour
     [ContextMenu("Move To Barrel")]
     public void MoveToBarrel()
     {
-        StartCoroutine(MoveToBarrelRoutine(4f));
+        StartCoroutine(MoveToBarrelRoutine(2f));
         // hasMovedToLocation = false;
         // movementButton.gameObject.SetActive(false);
         // SoundController.Instance.PlaySFX(SoundType.Walking);
@@ -433,6 +435,7 @@ public class Fisherman : MonoBehaviour
         // animator.runtimeAnimatorController = idleAnimatorController;
         transform.position = GetGroundPosition(transform.position);
         isNearDragon = false;
+        Camera.main.DOOrthoSize(7.5f, 0.5f); 
         SetButtonStatus();
         RotateCamera();
     }
@@ -440,7 +443,7 @@ public class Fisherman : MonoBehaviour
     [ContextMenu("Return To Fishing Site")]
     public void ReturnToFishingSite()
     {
-        StartCoroutine(ReturnToFishingSiteRoutine(4f));
+        StartCoroutine(ReturnToFishingSiteRoutine(2f));
         // hasMovedToLocation = false;
         // SoundController.Instance.PlaySFX(SoundType.Walking);
         // List<Vector3> path = new List<Vector3>();
@@ -641,7 +644,7 @@ public class Fisherman : MonoBehaviour
         StartCoroutine(MoveToPositionRoutineAfterPurchase(parent));
     }
 
-    public IEnumerator MoveToPositionRoutineAfterPurchase(Transform parent, float duration = 1f)
+    public IEnumerator MoveToPositionRoutineAfterPurchase(Transform parent, float duration = 0.25f)
     {
         hasMovedToLocation = false;
         SoundController.Instance.PlaySFX(SoundType.Walking);
