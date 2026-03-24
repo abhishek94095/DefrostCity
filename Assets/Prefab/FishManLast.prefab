@@ -228,7 +228,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &2222480036844004412
 RectTransform:
   m_ObjectHideFlags: 0
@@ -1318,9 +1318,9 @@ MonoBehaviour:
   inventoryTransform: {fileID: 4538100827228516512}
   fishSpawnPoint: {fileID: 3372190778866066276}
   isFollowingCamera: 0
+  forceFishOnClick: 0
   animator: {fileID: 4718428204760855708}
   fishCountText: {fileID: 340979741298959813}
-  movementButtonText: {fileID: 8424087845910504683}
   targetLocation: {x: 65.584, y: 1, z: 17.596}
   startingLocation: {x: 64.4, y: 0.4, z: 30.52}
   cameraPositionOffset: {x: 0, y: 14, z: 14}
@@ -1331,10 +1331,12 @@ MonoBehaviour:
   - {fileID: 0}
   - {fileID: 0}
   - {fileID: 0}
-  movementButton: {fileID: 860244032166171341}
   feedButton: {fileID: 0}
   dragon: {fileID: 0}
   CharacterInfoBG: {fileID: 0}
+  speed: 5
+  joystick: {fileID: 0}
+  purchaseFishman: {fileID: 0}
 --- !u!65 &5507954562980504312
 BoxCollider:
   m_ObjectHideFlags: 0
