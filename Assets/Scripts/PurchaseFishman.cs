@@ -60,7 +60,7 @@ public class PurchaseFishman : MonoBehaviour
         newFisherman.SetFirstFisherman(firstFisherman, fishermenPurchased); // Set reference to the first fisherman
         if(fishermenPurchased == finalPositions.Length) gameObject.SetActive(false);
         spawnedFisherMan.Add(newFisherman);
-        firstFisherman.goToBarrel += newFisherman.MoveToBarrel;
-        firstFisherman.goToFishingSpot += newFisherman.ReturnToFishingSite;
+        //firstFisherman.goToBarrel += newFisherman.MoveToBarrel;
+        //firstFisherman.goToFishingSpot += newFisherman.ReturnToFishingSite;
     }
 }

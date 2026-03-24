@@ -12,7 +12,7 @@ public class DragonController : MonoBehaviour
     public Transform[] spawnPoints;
     public GameObject endScreen, DragonLevel2;
     public GameObject villagerAnimation; // Visual for "freeing villagers"
-    public Transform startingPoint;
+    public Transform startingPoint, head;
     public TextMeshProUGUI fishCountText;
     public Image fishBGFill;
     public GameObject flameThrowEffect;
@@ -20,6 +20,7 @@ public class DragonController : MonoBehaviour
     public Transform[] snowLevel2ObjectToLowerLeft, snowLevel2ObjectToLowerRight, snowLevel3ObjectToLowerLeft, snowLevel3ObjectToLowerRight;
     public Transform[] grassLevel2ObjectToLowerLeft, grassLevel2ObjectToLowerRight, grassLevel3ObjectToLowerLeft, grassLevel3ObjectToLowerRight;
     public Vector3 lowerPoint;
+    public GameObject boatObject;
     public Transform level2GrassPatchParent, level3GrassPatchParent, level2SnowPatchParent, level3SnowPathParent; 
     public int[] requirements = { 2, 5, 10 }; // Fish needed for Stage 1, 2, 3
     private int fishFed = 0;
@@ -60,12 +61,13 @@ public class DragonController : MonoBehaviour
     [ContextMenu("Level up")]
     public void MoveSnowDown()
     {
-        if(currentStage == 1)
+        if(currentStage == 2)
         {
             level2GrassPatchParent.DOMove(lowerPoint + level2GrassPatchParent.position, 1f);
             DOVirtual.DelayedCall(1f, () => level2SnowPatchParent.gameObject.SetActive(false));
+            boatObject.gameObject.SetActive(true);
         }
-        if(currentStage == 2)
+        if(currentStage == 1)
         {
             level3GrassPatchParent.DOMove(lowerPoint + level3GrassPatchParent.position, 1f);
             DOVirtual.DelayedCall(1f, () => level3SnowPathParent.gameObject.SetActive(false));
