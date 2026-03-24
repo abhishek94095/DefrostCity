@@ -20,7 +20,7 @@ public class DragonController : MonoBehaviour
     public Transform[] snowLevel2ObjectToLowerLeft, snowLevel2ObjectToLowerRight, snowLevel3ObjectToLowerLeft, snowLevel3ObjectToLowerRight;
     public Transform[] grassLevel2ObjectToLowerLeft, grassLevel2ObjectToLowerRight, grassLevel3ObjectToLowerLeft, grassLevel3ObjectToLowerRight;
     public Vector3 lowerPoint;
-    public GameObject boatObject;
+    public GameObject boatObject, endVillageViewObject;
     public Transform level2GrassPatchParent, level3GrassPatchParent, level2SnowPatchParent, level3SnowPathParent; 
     public int[] requirements = { 2, 5, 10 }; // Fish needed for Stage 1, 2, 3
     private int fishFed = 0;
@@ -164,7 +164,7 @@ public class DragonController : MonoBehaviour
 
     void FinalWin()
     {
-        if(endScreen != null) endScreen.SetActive(true);
+        //if(endScreen != null) endScreen.SetActive(true);
         
         // Stop all inputs
         Fisherman[] allFishermen = FindObjectsOfType<Fisherman>();
@@ -172,5 +172,7 @@ public class DragonController : MonoBehaviour
         
         Debug.Log("Congratulations! You've saved the city!");
         SoundController.Instance.PlaySFX(SoundType.Win);
+        endVillageViewObject.gameObject.SetActive(true);
+        DOVirtual.DelayedCall(4.1f, () => endVillageViewObject.gameObject.SetActive(false));
     }
 }

@@ -546,7 +546,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_RaycastTarget: 1
+  m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
@@ -1334,6 +1334,7 @@ MonoBehaviour:
   movementButton: {fileID: 860244032166171341}
   feedButton: {fileID: 0}
   dragon: {fileID: 0}
+  CharacterInfoBG: {fileID: 0}
 --- !u!65 &5507954562980504312
 BoxCollider:
   m_ObjectHideFlags: 0

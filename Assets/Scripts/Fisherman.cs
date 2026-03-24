@@ -93,6 +93,9 @@ public class Fisherman : MonoBehaviour
         {
             firstFisherMan.CountOtherFishermanFish();
             StopFishing();
+            // GameObject fish = Instantiate(fishPrefab, fishSpawnPoint.position, Quaternion.identity, transform);
+            GameObject fish = Instantiate(fishPrefab, firstFisherMan.inventoryTransform.position, Quaternion.identity, firstFisherMan.transform);
+            firstFisherMan.spawnedFish.Add(fish);
             isNearDragon = false;
         }
     }
@@ -268,7 +271,7 @@ public class Fisherman : MonoBehaviour
         RotateCameraLocalTween();
         // 🔄 STEP 1: Rotate player instantly (NO tween conflict)
         if (path.Count > 1) transform.rotation = GetLookRotation(GetGroundPosition(path[1]));
-        CharacterInfoBG.eulerAngles += new Vector3(0,200,0);
+        CharacterInfoBG.eulerAngles += new Vector3(0,180,0);
         // 🏃 STEP 2: Start movement immediately
         //animator.runtimeAnimatorController = runningAnimatorController;
         animator.SetBool("RunningStart", true);
@@ -387,7 +390,7 @@ public class Fisherman : MonoBehaviour
         path.Add(transform.position); 
         movementButton.gameObject.SetActive(false);
         //feedButton.gameObject.SetActive(false);
-        CharacterInfoBG.eulerAngles += new Vector3(0,160,0);
+        CharacterInfoBG.eulerAngles += new Vector3(0,180,0);
 
         for (int i = wayToBarrel.Count - 1; i >= 0; i--)
         {
@@ -604,7 +607,7 @@ public class Fisherman : MonoBehaviour
             // GameObject fish = Instantiate(fishPrefab, transform.position, Quaternion.identity);
             // 🎯 Move to dragon
             Transform target = dragon.head.transform;
-            float duration = 0.4f;
+            float duration = 0.1f;
             float elapsed = 0f;
 
             while (elapsed < duration)

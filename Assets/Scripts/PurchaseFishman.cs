@@ -52,6 +52,12 @@ public class PurchaseFishman : MonoBehaviour
             return;
         }
 
+        if(fishermenPurchased == 1)
+        {
+            cost = 10;
+            costText.text = $"x{cost}";
+        }
+
         // Fisherman newFisherman = Instantiate(fishermanPrefab, spawnPoint.position, Quaternion.identity);
         Fisherman newFisherman = fishermans[fishermenPurchased - 1];
         newFisherman.gameObject.SetActive(true);
