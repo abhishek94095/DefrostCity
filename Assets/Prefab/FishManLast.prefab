@@ -633,7 +633,7 @@ GameObject:
   m_Component:
   - component: {fileID: 4538100827228516512}
   m_Layer: 0
-  m_Name: GameObject
+  m_Name: Sack
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -741,7 +741,7 @@ GameObject:
   m_Component:
   - component: {fileID: 3372190778866066276}
   m_Layer: 0
-  m_Name: GameObject (1)
+  m_Name: FishingOrigin
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1313,7 +1313,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   catchTime: 3
-  progressCircle: {fileID: 3140961517210988716}
   fishPrefab: {fileID: 5220318354916251288, guid: 1695e77c2ec06a141839d3708f17d91e, type: 3}
   inventoryTransform: {fileID: 4538100827228516512}
   fishSpawnPoint: {fileID: 3372190778866066276}

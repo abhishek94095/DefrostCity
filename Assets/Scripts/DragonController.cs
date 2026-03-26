@@ -12,7 +12,7 @@ public class DragonController : MonoBehaviour
     public Transform[] spawnPoints;
     public GameObject endScreen, DragonLevel2;
     public GameObject villagerAnimation; // Visual for "freeing villagers"
-    public Transform startingPoint, head;
+    public Transform startingPoint, head, plate;
     public TextMeshProUGUI fishCountText;
     public Image fishBGFill;
     public GameObject flameThrowEffect;
