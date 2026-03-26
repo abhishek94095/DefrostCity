@@ -58,10 +58,10 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _90HueAdjust: 0.975
+    - _90HueAdjust: 1
     - _EmissionIntensity: 0
     - _HueAdjust: 0.591
-    - _IridFresnelPower: 2.64
+    - _IridFresnelPower: 3
     - _IridTexHueAdjust: 0.686
     - _LevelAdjust: 0.932
     - _PatternTexIntensity: 1
@@ -71,6 +71,6 @@ Material:
     - _Dye50: {r: 0.90800005, g: 0.8185721, b: 0.656484, a: 1}
     - _Dye60: {r: 0.46351013, g: 0.49581712, b: 0.7924528, a: 1}
     - _Dye80: {r: 0.61960787, g: 0.6392157, b: 0.7725491, a: 1}
-    - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
+    - _EmissionColor: {r: 1, g: 0.4901618, b: 0, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
