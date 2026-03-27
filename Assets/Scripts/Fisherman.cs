@@ -17,7 +17,7 @@ public class Fisherman : MonoBehaviour
     [SerializeField] private DragonController dragon;
     private float timer = 0;
     private float coughtFishCount = 0;
-    private bool isFishing = false;
+    [SerializeField] private bool isFishing = false;
     private bool hasMovedToLocation = false;
     private bool isNearDragon = false;
     private bool wasMoving = false;
@@ -31,8 +31,20 @@ public class Fisherman : MonoBehaviour
     private InteractionType currentZone = InteractionType.None;
     public PurchaseFishman purchaseFishman;
 
+    void Start()
+    {
+        if(isFishing) animator.SetBool("IsFishing", true); // ⭐ ADD THIS
+    }
     void Update()
     {
+        float inputMagnitude = 0;
+        Vector2 input = Vector2.zero;
+        if(joystick != null)
+        {
+            input = joystick.Direction;
+            inputMagnitude = input.magnitude;
+        }
+        bool isMoving = inputMagnitude > 0.1f;
         // 🎣 Fishing logic
         if (isFishing)
         {
@@ -42,25 +54,9 @@ public class Fisherman : MonoBehaviour
             {
                 CompleteCatch();
             }
-
-            // Ensure running is stopped when fishing starts
-            if (wasMoving)
-            {
-                animator.SetBool("RunningStart", false);
-                animator.SetBool("RunningEnd", true);
-                wasMoving = false;
-            }
-
-            return;
         }
 
-        if (!isFollowingCamera)
-            return;
-
-        Vector2 input = joystick.Direction;
-        float inputMagnitude = input.magnitude;
-
-        bool isMoving = inputMagnitude > 0.1f;
+        if (!isFollowingCamera) return;
 
         // 🎯 Handle animation transitions ONLY on change
         if (isMoving && !wasMoving)
@@ -90,12 +86,9 @@ public class Fisherman : MonoBehaviour
         if (isMoving)
         {
             Vector3 move = new Vector3(input.x, 0f, input.y).normalized;
-
             Vector3 targetPos = transform.position + move * speed * Time.deltaTime;
             targetPos = GetGroundPosition(targetPos);
-
             transform.position = targetPos;
-
             Quaternion targetRot = Quaternion.LookRotation(move);
             transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, 10f * Time.deltaTime);
         }
@@ -206,9 +199,8 @@ public class Fisherman : MonoBehaviour
                 yield return null;
             }
             spawnedFish.RemoveAt(0);
-            Destroy(fish);
+            Destroy(fish, 2.1f);
             dragon.FeedFishOneByOne(1);
-            yield return new WaitForSeconds(0.1f); // spacing between feeds
         }
         isFeeding = false;
     }
@@ -313,7 +305,7 @@ public class Fisherman : MonoBehaviour
         {
             currentZone = zone.type;
         }
-        if (zone.type == InteractionType.FishingArea)
+        if (zone.type == InteractionType.Fisherman)
         {
             StartFishing();
         }
