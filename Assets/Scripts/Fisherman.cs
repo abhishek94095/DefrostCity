@@ -165,23 +165,27 @@ public class Fisherman : MonoBehaviour
         });
     }
 
-    public void MoveFishToDragon(int fishCountToRemove = 0)
+    public void MoveFishToDragon(Fisherman fisherman)
     {
-        if (fishCountToRemove <= 0) return;
-        StartCoroutine(FeedFishSequence(fishCountToRemove));
+        if (fisherman.coughtFishCount <= 0) return;
+        StartCoroutine(FeedFishSequence(fisherman));
         dragon.FeedAnimation();
     }
-    IEnumerator FeedFishSequence(int fishCount)
+    IEnumerator FeedFishSequence(Fisherman fisherman)
     {
-        for (int i = 0; i < fishCount; i++)
+        for (int i = 0; i < fisherman.coughtFishCount; i++)
         {
             if (coughtFishCount <= 0) yield break;
             // 🔻 Reduce fish
             coughtFishCount--;
             fishCountText.text = coughtFishCount.ToString();
+            if(spawnedFish.Count == 0)
+            {
+                GameObject newfish = Instantiate(fishPrefab, inventoryTransform.position, Quaternion.identity, firstFisherMan.transform);
+                spawnedFish.Add(newfish);
+            }
             // 🐟 Spawn fish
             GameObject fish = spawnedFish[0];
-            // GameObject fish = Instantiate(fishPrefab, transform.position, Quaternion.identity);
             // 🎯 Move to dragon
             Transform target = dragon.plate.transform;
             float duration = 0.1f;
@@ -209,7 +213,7 @@ public class Fisherman : MonoBehaviour
     {
         if(isFeeding) return;
         isFeeding = true;
-        MoveFishToDragon((int)coughtFishCount);
+        MoveFishToDragon(fisherman);
     }
 
     internal void MoveToPosition(Transform parent)

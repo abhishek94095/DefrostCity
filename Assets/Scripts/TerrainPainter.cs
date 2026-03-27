@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections;
+using System;
 
 public class TerrainPainter : MonoBehaviour
 {
@@ -7,15 +8,20 @@ public class TerrainPainter : MonoBehaviour
     public int targetLayerIndex = 0, brushSize = 5; // grass layer index
     public Transform worldPos;
 
-    [ContextMenu("Paint Terrian")]
-    public void StartPaint()
+    [ContextMenu("Paint Test")]
+    public void StartPaintTest()
     {
+        StartCoroutine(PaintRoutine(worldPos.position, 0));
+    }
+
+    public void StartPaint(int brushSize)
+    {
+        this.brushSize = brushSize;
         StartCoroutine(PaintRoutine(worldPos.position));
     }
 
-    IEnumerator PaintRoutine(Vector3 worldPos)
+    IEnumerator PaintRoutine(Vector3 worldPos, float duration = 1.5f, Action onCompleteAction = null)
     {
-        float duration = 1.5f;
         float elapsed = 0f;
 
         while (elapsed < duration)
@@ -33,6 +39,7 @@ public class TerrainPainter : MonoBehaviour
 
         // Final pass to ensure full coverage
         PaintCircle(worldPos, brushSize);
+        onCompleteAction?.Invoke();
     }
 
     void PaintCircle(Vector3 worldPos, float radius)
@@ -67,8 +74,8 @@ public class TerrainPainter : MonoBehaviour
                     continue;
 
                 // ⭐ Smooth circular falloff
-                float strength = 1f - (dist / brushSize);
-
+                float strength = (1f - (dist / brushSize)) * multiplier;
+                strength = Mathf.Clamp01(strength);
                 for (int l = 0; l < alpha.GetLength(2); l++)
                     alpha[pz, px, l] *= (1 - strength);
 
@@ -77,5 +84,19 @@ public class TerrainPainter : MonoBehaviour
         }
 
         data.SetAlphamaps(0, 0, alpha);
+    }
+    public float multiplier;
+    [ContextMenu("Reset Original")]
+    public void ResetToOriginal()
+    {
+        int previousLayer = targetLayerIndex;
+        int oldBrushSize = brushSize;
+        brushSize = 800;
+        targetLayerIndex = 0;
+        StartCoroutine(PaintRoutine(worldPos.position, 0f, () =>
+        {
+            targetLayerIndex = previousLayer;
+            brushSize = oldBrushSize;
+        }));
     }
 }

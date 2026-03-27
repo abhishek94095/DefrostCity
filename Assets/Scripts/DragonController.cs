@@ -9,6 +9,7 @@ public class DragonController : MonoBehaviour
     public int currentStage = 1; // 1: Young, 2: Teen, 3: Adult
     public Animator dragonAnimator;
     public Transform[] spawnPoints;
+    public TerrainPainter terrainPainter;
     public GameObject endScreen, DragonLevel2;
     public GameObject villagerAnimation; // Visual for "freeing villagers"
     public Transform plate;
@@ -21,6 +22,21 @@ public class DragonController : MonoBehaviour
     public Transform level2GrassPatchParent, level3GrassPatchParent, level2SnowPatchParent, level3SnowPathParent; 
     public int[] requirements = { 2, 5, 10 }; // Fish needed for Stage 1, 2, 3
     private int fishFed = 0;
+
+    public void OnDestroy()
+    {
+        terrainPainter.ResetToOriginal();
+    }
+
+    private void UpgradeToLevel2()
+    {
+        terrainPainter.StartPaint(45);
+    }
+
+    private void UpgradeToLevel3()
+    {
+        terrainPainter.StartPaint(75);
+    }
 
     public void UpgradeDragon()
     {
@@ -46,6 +62,7 @@ public class DragonController : MonoBehaviour
             upgradeEffect.SetActive(true);
             DOVirtual.DelayedCall(3f, () => upgradeEffect.SetActive(false));
             currentStage++;
+            UpgradeToLevel2();
             fishCountText.text = Math.Max(0,requirements[currentStage - 1] - fishFed).ToString(); // Update UI with remaining fish needed
         }
         else
@@ -114,12 +131,10 @@ public class DragonController : MonoBehaviour
     void FinalWin()
     {
         Fisherman[] allFishermen = FindObjectsOfType<Fisherman>();
-        foreach (var f in allFishermen) f.StopFishing();
+        // foreach (var f in allFishermen) f.StopFishing();
         
         Debug.Log("Congratulations! You've saved the city!");
         SoundController.Instance.PlaySFX(SoundType.Win);
-        // endVillageViewObject.gameObject.SetActive(true);
-        // DOVirtual.DelayedCall(4.1f, () => endVillageViewObject.gameObject.SetActive(false));
-        // DOVirtual.DelayedCall(4.1f, () => endScreen.gameObject.SetActive(true));
+        UpgradeToLevel3();
     }
 }
