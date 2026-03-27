@@ -173,40 +173,64 @@ public class Fisherman : MonoBehaviour
     }
     IEnumerator FeedFishSequence(Fisherman fisherman)
     {
-        for (int i = 0; i < fisherman.coughtFishCount; i++)
+        isFeeding = true;
+        while (true)
         {
-            if (coughtFishCount <= 0) yield break;
-            // 🔻 Reduce fish
+            // ⛔ Stop if no fish
+            if (coughtFishCount <= 0)
+            {
+                yield return null;
+                continue;
+            }
+
+            // ⛔ Pause if dragon is busy (upgrade)
+            if (dragon.IsBusy)
+            {
+                yield return null;
+                continue;
+            }
+
             coughtFishCount--;
             fishCountText.text = coughtFishCount.ToString();
-            if(spawnedFish.Count == 0)
+
+            if (spawnedFish.Count == 0)
             {
-                GameObject newfish = Instantiate(fishPrefab, inventoryTransform.position, Quaternion.identity, firstFisherMan.transform);
-                spawnedFish.Add(newfish);
+                GameObject newFish = Instantiate(
+                    fishPrefab,
+                    inventoryTransform.position,
+                    Quaternion.identity,
+                    firstFisherMan.transform
+                );
+                spawnedFish.Add(newFish);
             }
-            // 🐟 Spawn fish
+
             GameObject fish = spawnedFish[0];
-            // 🎯 Move to dragon
             Transform target = dragon.plate.transform;
+
             float duration = 0.1f;
             float elapsed = 0f;
 
             while (elapsed < duration)
             {
                 if (fish == null) yield break;
+
                 fish.transform.position = Vector3.Lerp(
                     fish.transform.position,
                     target.position,
                     elapsed / duration
                 );
+
                 elapsed += Time.deltaTime;
                 yield return null;
             }
+
             spawnedFish.RemoveAt(0);
             Destroy(fish, 2.1f);
+
             dragon.FeedFishOneByOne(1);
+
+            yield return new WaitForSeconds(0.05f);
         }
-        isFeeding = false;
     }
 
     public void FeedFishToDragon(Fisherman fisherman)
@@ -312,6 +336,10 @@ public class Fisherman : MonoBehaviour
         if (zone.type == InteractionType.Fisherman)
         {
             StartFishing();
+        }
+        if (zone.type == InteractionType.Dragon)
+        {
+            FeedFishToDragon(this);
         }
     }
 

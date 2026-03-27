@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using DG.Tweening;
 using TMPro;
 using UnityEngine;
@@ -22,53 +23,53 @@ public class DragonController : MonoBehaviour
     public Transform level2GrassPatchParent, level3GrassPatchParent, level2SnowPatchParent, level3SnowPathParent; 
     public int[] requirements = { 2, 5, 10 }; // Fish needed for Stage 1, 2, 3
     private int fishFed = 0;
-
-    public void OnDestroy()
+    public bool IsBusy { get; private set; }
+    public void OnDisable()
     {
         terrainPainter.ResetToOriginal();
     }
 
     private void UpgradeToLevel2()
     {
+        SoundController.Instance.PlaySFX(SoundType.FireBreath);
+        DragonLevel2.SetActive(true); // Show new dragon visuals
+        foreach (var obj in currentDragonObjects) obj.SetActive(false); // Hide old dragon visuals
+        dragonAnimator = DragonLevel2.GetComponent<Animator>(); // Switch to new animator
+        dragonAnimator.SetTrigger("Firebreath_L"); // Play upgrade animation
+        //SpawnFishermen(spawnPoints.Length); // Spawns more as dragon grows
+        upgradeEffect.SetActive(true);
+        DOVirtual.DelayedCall(3f, () => upgradeEffect.SetActive(false));
+        currentStage++;
         terrainPainter.StartPaint(45);
-    }
-
-    private void UpgradeToLevel3()
-    {
-        terrainPainter.StartPaint(75);
+        fishCountText.text = Math.Max(0,requirements[currentStage - 1] - fishFed).ToString(); // Update UI with remaining fish needed
     }
 
     public void UpgradeDragon()
     {
-        // 1. Play Growing/Eating Animation
+        IsBusy = true; // ⛔ BLOCK feeding
         fishFed = 0;
         CurrencyHandler.Instance.AddGoldFromFish(4);
-        // dragonAnimator.Play("Grow_2");
         SoundController.Instance.PlaySFX(SoundType.Upgrade);
         flameThrowEffect.SetActive(true); 
         if (villagerAnimation != null) villagerAnimation.SetActive(true);
         MoveSnowDown();
         dragonAnimator.SetTrigger("Upgrade2");
-        //EnableGrassObjectAndDisableSnowObject();
-        // 3. Increment stage and spawn more fishermen
         if (currentStage < 2)
         {
-            SoundController.Instance.PlaySFX(SoundType.FireBreath);
-            DragonLevel2.SetActive(true); // Show new dragon visuals
-            foreach (var obj in currentDragonObjects) obj.SetActive(false); // Hide old dragon visuals
-            dragonAnimator = DragonLevel2.GetComponent<Animator>(); // Switch to new animator
-            dragonAnimator.SetTrigger("Firebreath_L"); // Play upgrade animation
-            //SpawnFishermen(spawnPoints.Length); // Spawns more as dragon grows
-            upgradeEffect.SetActive(true);
-            DOVirtual.DelayedCall(3f, () => upgradeEffect.SetActive(false));
-            currentStage++;
             UpgradeToLevel2();
-            fishCountText.text = Math.Max(0,requirements[currentStage - 1] - fishFed).ToString(); // Update UI with remaining fish needed
         }
         else
         {
-            FinalWin(); // End screen on last stage
+            FinalWin();
         }
+
+        StartCoroutine(ResumeAfterDelay(6f));
+    }
+
+    IEnumerator ResumeAfterDelay(float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        IsBusy = false; // ✅ allow feeding again
     }
 
     public void StartFlamethrower()
@@ -81,7 +82,6 @@ public class DragonController : MonoBehaviour
         flameThrowEffect.gameObject.SetActive(false);
     }
 
-    [ContextMenu("Level up")]
     public void MoveSnowDown()
     {
         if(currentStage == 2)
@@ -96,7 +96,10 @@ public class DragonController : MonoBehaviour
             DOVirtual.DelayedCall(1f, () => level3SnowPathParent.gameObject.SetActive(false));
         }
     }
-
+    public void OnUpgradeAnimationComplete()
+    {
+        IsBusy = false;
+    }
     public bool canAddCoins = true;
     public void FeedFishOneByOne(int fishAmount)
     {
@@ -130,11 +133,10 @@ public class DragonController : MonoBehaviour
 
     void FinalWin()
     {
-        Fisherman[] allFishermen = FindObjectsOfType<Fisherman>();
-        // foreach (var f in allFishermen) f.StopFishing();
-        
         Debug.Log("Congratulations! You've saved the city!");
         SoundController.Instance.PlaySFX(SoundType.Win);
-        UpgradeToLevel3();
+        terrainPainter.StartPaint(75);
+        dragonAnimator.SetTrigger("Upgrade3");
+        DOVirtual.DelayedCall(3f, () => terrainPainter.StartPaint(800));
     }
 }
