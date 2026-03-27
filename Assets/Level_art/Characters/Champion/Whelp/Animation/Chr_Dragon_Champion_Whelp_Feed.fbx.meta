@@ -56,13 +56,6 @@ ModelImporter:
       curves: []
       events:
       - time: 0.18278302
-        functionName: EnableVfx
-        data: 
-        objectReferenceParameter: {instanceID: 0}
-        floatParameter: 0
-        intParameter: 0
-        messageOptions: 0
-      - time: 0.19423077
         functionName: StartFlamethrower
         data: 
         objectReferenceParameter: {instanceID: 0}
@@ -70,13 +63,20 @@ ModelImporter:
         intParameter: 0
         messageOptions: 0
       - time: 0.21354166
-        functionName: TriggerCharMeat
+        functionName: StopFlamethrower
         data: 
         objectReferenceParameter: {instanceID: 0}
         floatParameter: 0
         intParameter: 0
         messageOptions: 0
       - time: 0.37853774
+        functionName: StartFlamethrower
+        data: 
+        objectReferenceParameter: {instanceID: 0}
+        floatParameter: 0
+        intParameter: 0
+        messageOptions: 0
+      - time: 0.420765
         functionName: StopFlamethrower
         data: 
         objectReferenceParameter: {instanceID: 0}

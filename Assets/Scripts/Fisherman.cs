@@ -190,6 +190,12 @@ public class Fisherman : MonoBehaviour
                 continue;
             }
 
+            if(currentZone != InteractionType.Dragon)
+            {
+                yield return null;
+                continue;
+            }
+
             coughtFishCount--;
             fishCountText.text = coughtFishCount.ToString();
 
@@ -213,7 +219,7 @@ public class Fisherman : MonoBehaviour
             while (elapsed < duration)
             {
                 if (fish == null) yield break;
-
+                fish.transform.SetParent(dragon.plate);
                 fish.transform.position = Vector3.Lerp(
                     fish.transform.position,
                     target.position,
@@ -336,10 +342,6 @@ public class Fisherman : MonoBehaviour
         if (zone.type == InteractionType.Fisherman)
         {
             StartFishing();
-        }
-        if (zone.type == InteractionType.Dragon)
-        {
-            FeedFishToDragon(this);
         }
     }
 

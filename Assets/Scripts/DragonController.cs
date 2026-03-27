@@ -69,7 +69,7 @@ public class DragonController : MonoBehaviour
     IEnumerator ResumeAfterDelay(float delay)
     {
         yield return new WaitForSeconds(delay);
-        IsBusy = false; // ✅ allow feeding again
+        IsBusy = false;
     }
 
     public void StartFlamethrower()
