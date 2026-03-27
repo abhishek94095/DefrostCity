@@ -1,204 +1,279 @@
 using UnityEngine;
 using UnityEditor;
+using System.Collections.Generic;
 using System.IO;
 
-/// <summary>
-/// Isometric Turntable Renderer
-/// -------------------------------------------------------
-/// Attach this script to your isometric Camera GameObject.
-/// Lights should already be parented to the camera so they
-/// travel with it automatically.
-///
-/// Usage:
-///   1. Select your Camera in the Hierarchy.
-///   2. Add this component (Component > Rendering > Isometric Turntable Renderer).
-///   3. Set the Target to the model/pivot you want to orbit around.
-///   4. Adjust Resolution, Output Root, and any other settings.
-///   5. In the Inspector click "Render All Angles" or use the
-///      menu  Tools > Isometric Turntable > Render All Angles.
-/// </summary>
 [ExecuteInEditMode]
 public class IsometricTurntableRenderer : MonoBehaviour
 {
-    [Header("Target")]
-    [Tooltip("The model (or an empty pivot at its centre) the camera orbits around.")]
-    public Transform target;
+    [Header("Batch Input")]
+    public string inputFolder = "Models";
+    public float spacing = 100f;
 
-    [Header("Camera Orbit Settings")]
-    [Tooltip("Orbit radius – distance from target centre to camera.")]
-    public float orbitRadius = 10f;
-
-    [Tooltip("Fixed elevation angle above the horizon (isometric feel: ~30–45°).")]
+    [Header("Camera")]
     public float elevationAngle = 30f;
-
-    [Tooltip("Degrees per step. 30 gives 12 frames (0,30,60,...,330).")]
     public float stepDegrees = 30f;
 
-    [Header("Render Output")]
-    [Tooltip("Root folder for all renders (relative to project root).")]
+    [Header("Render")]
     public string outputRoot = "Renders";
-
-    [Tooltip("Sub-folder name for this model batch (e.g. 'Knight', 'Barrel').")]
-    public string batchName = "Model_01";
-
-    [Tooltip("Render width in pixels.")]
     public int renderWidth = 512;
-
-    [Tooltip("Render height in pixels.")]
     public int renderHeight = 512;
-
-    [Tooltip("Anti-aliasing sample count (1, 2, 4, or 8).")]
     public int antiAliasing = 4;
-
-    [Tooltip("PNG background is transparent when true, opaque black when false.")]
     public bool transparentBackground = true;
 
-    // ─────────────────────────────────────────────────────────────────────────
-    //  Editor Button
-    // ─────────────────────────────────────────────────────────────────────────
-
-#if UNITY_EDITOR
-    [ContextMenu("Render All Angles")]
-    public void RenderAllAngles()
+    class RenderItem
     {
-        if (target == null)
-        {
-            Debug.LogError("[TurntableRenderer] No Target assigned. Please assign the model transform.");
-            return;
-        }
+        public GameObject obj;
+        public Transform pivot;
+    }
 
-        Camera cam = GetComponent<Camera>();
+    private List<RenderItem> items = new List<RenderItem>();
+
+    private int currentModelIndex = 0;
+    private int currentAngleIndex = 0;
+    private int totalSteps;
+
+    private Camera cam;
+    private bool isRendering = false;
+
+    private GameObject doneParent;
+
+    // ─────────────────────────────────────────────
+    // START (CALLED FROM BUTTON)
+    // ─────────────────────────────────────────────
+#if UNITY_EDITOR
+    public void StartRender()
+    {
+        cam = GetComponent<Camera>();
+
         if (cam == null)
         {
-            Debug.LogError("[TurntableRenderer] No Camera component found on this GameObject.");
+            Debug.LogError("No Camera found.");
             return;
         }
 
-        // Store original camera transform so we can restore it afterwards
-        Vector3 originalPosition  = transform.position;
-        Quaternion originalRotation = transform.rotation;
+        SetupDoneParent();
+        SpawnAllModels();
 
-        int totalSteps = Mathf.RoundToInt(360f / stepDegrees);
-        int rendered   = 0;
+        totalSteps = Mathf.RoundToInt(360f / stepDegrees);
 
-        for (int i = 0; i < totalSteps; i++)
-        {
-            float yaw = i * stepDegrees;          // 0, 30, 60 … 330
-            PositionCamera(cam, yaw);
-            RenderAndSave(cam, yaw);
-            rendered++;
+        currentModelIndex = 0;
+        currentAngleIndex = 0;
 
-            // Keep the editor from freezing on large batches
-            EditorUtility.DisplayProgressBar(
-                "Turntable Render",
-                $"Rendering angle {yaw:000}°  ({rendered}/{totalSteps})",
-                (float)rendered / totalSteps);
-        }
+        isRendering = true;
 
-        EditorUtility.ClearProgressBar();
-
-        // Restore camera to where it was
-        transform.position = originalPosition;
-        transform.rotation = originalRotation;
-
-        string fullPath = Path.GetFullPath(Path.Combine(Application.dataPath, "..", outputRoot, batchName));
-        Debug.Log($"[TurntableRenderer] Done! {rendered} frames saved to:\n{fullPath}");
-        EditorUtility.RevealInFinder(fullPath);
+        EditorApplication.update += OnEditorUpdate;
     }
 #endif
 
-    // ─────────────────────────────────────────────────────────────────────────
-    //  Core helpers
-    // ─────────────────────────────────────────────────────────────────────────
-
-    /// <summary>
-    /// Moves and rotates the camera to orbit the target at the given yaw angle,
-    /// keeping all other dimensions (elevation, radius, FOV, etc.) constant.
-    /// </summary>
-    private void PositionCamera(Camera cam, float yaw)
+    // ─────────────────────────────────────────────
+    void SetupDoneParent()
     {
-        // Convert spherical coords → world position
-        float yawRad  = yaw           * Mathf.Deg2Rad;
+        GameObject existing = GameObject.Find("Done");
+
+        if (existing != null)
+            doneParent = existing;
+        else
+            doneParent = new GameObject("Done");
+    }
+
+    // ─────────────────────────────────────────────
+    void SpawnAllModels()
+    {
+        items.Clear();
+
+        string[] guids = AssetDatabase.FindAssets("t:Model", new[] { "Assets/" + inputFolder });
+
+        float offsetX = 0;
+
+        foreach (string guid in guids)
+        {
+            string path = AssetDatabase.GUIDToAssetPath(guid);
+            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+
+            if (prefab == null) continue;
+
+            GameObject obj = (GameObject)PrefabUtility.InstantiatePrefab(prefab);
+
+            obj.transform.position = new Vector3(offsetX, 0, 0);
+
+            Transform pivot = CreateRenderPivotSafe(obj);
+
+            obj.SetActive(false); // 🔥 initially disable everything
+
+            items.Add(new RenderItem
+            {
+                obj = obj,
+                pivot = pivot
+            });
+
+            offsetX += spacing;
+        }
+
+        Debug.Log($"Spawned {items.Count} models.");
+    }
+
+    // ─────────────────────────────────────────────
+    void OnEditorUpdate()
+    {
+        if (!isRendering)
+            return;
+
+        if (currentModelIndex >= items.Count)
+        {
+            Debug.Log("✅ Rendering Complete");
+            EditorUtility.RevealInFinder(Path.Combine(Application.dataPath, "..", outputRoot));
+            EditorApplication.update -= OnEditorUpdate;
+            isRendering = false;
+            return;
+        }
+
+        var item = items[currentModelIndex];
+
+        if (item == null || item.obj == null || item.pivot == null)
+        {
+            currentModelIndex++;
+            currentAngleIndex = 0;
+            return;
+        }
+
+        // 🔥 Activate ONLY current object
+        for (int i = 0; i < items.Count; i++)
+        {
+            if (items[i].obj != null)
+                items[i].obj.SetActive(i == currentModelIndex);
+        }
+
+        float yaw = currentAngleIndex * stepDegrees;
+
+        PositionCamera(cam, yaw, item.obj, item.pivot);
+
+        RenderAndSave(cam, yaw, item.obj.name);
+
+        currentAngleIndex++;
+
+        // ─────────────────────────────
+        // FINISHED THIS MODEL
+        // ─────────────────────────────
+        if (currentAngleIndex >= totalSteps)
+        {
+            currentAngleIndex = 0;
+
+            // ✅ Move to Done folder
+            item.obj.transform.SetParent(doneParent.transform);
+
+            // ❌ Disable after render
+            item.obj.SetActive(false);
+
+            currentModelIndex++;
+        }
+    }
+
+    // ─────────────────────────────────────────────
+    Transform CreateRenderPivotSafe(GameObject obj)
+    {
+        if (obj == null) return null;
+
+        Renderer[] renderers = obj.GetComponentsInChildren<Renderer>(true);
+
+        if (renderers.Length == 0)
+            return obj.transform;
+
+        Bounds bounds = renderers[0].bounds;
+
+        foreach (var r in renderers)
+        {
+            if (r == null) continue;
+            bounds.Encapsulate(r.bounds);
+        }
+
+        GameObject pivot = new GameObject(obj.name + "_Pivot");
+        pivot.transform.position = bounds.center;
+
+        return pivot.transform;
+    }
+
+    // ─────────────────────────────────────────────
+    void PositionCamera(Camera cam, float yaw, GameObject obj, Transform pivot)
+    {
+        Renderer[] renderers = obj.GetComponentsInChildren<Renderer>(true);
+
+        if (renderers.Length == 0) return;
+
+        Bounds bounds = renderers[0].bounds;
+
+        foreach (var r in renderers)
+        {
+            if (r == null) continue;
+            bounds.Encapsulate(r.bounds);
+        }
+
+        float size = bounds.extents.magnitude;
+        float radius = size * 2.5f;
+
+        float yawRad = yaw * Mathf.Deg2Rad;
         float elevRad = elevationAngle * Mathf.Deg2Rad;
 
         Vector3 offset = new Vector3(
-            orbitRadius * Mathf.Cos(elevRad) * Mathf.Sin(yawRad),
-            orbitRadius * Mathf.Sin(elevRad),
-            orbitRadius * Mathf.Cos(elevRad) * Mathf.Cos(yawRad)
+            radius * Mathf.Cos(elevRad) * Mathf.Sin(yawRad),
+            radius * Mathf.Sin(elevRad),
+            radius * Mathf.Cos(elevRad) * Mathf.Cos(yawRad)
         );
 
-        transform.position = target.position + offset;
-        transform.LookAt(target.position);
+        transform.position = pivot.position + offset;
+        transform.LookAt(pivot.position);
     }
 
-    /// <summary>
-    /// Renders a single frame from the camera and writes a PNG to disk.
-    /// Folder name is zero-padded to match "000" format (e.g. "030", "120").
-    /// </summary>
-    private void RenderAndSave(Camera cam, float yaw)
+    // ─────────────────────────────────────────────
+    void RenderAndSave(Camera cam, float yaw, string modelName)
     {
-        // Build output path:  <outputRoot>/<batchName>/<angle>/frame.png
-        string folderName = ((int)yaw).ToString("D3");   // "000", "030", "330"
-        string dirPath    = Path.Combine(Application.dataPath, "..", outputRoot, batchName, folderName);
-        Directory.CreateDirectory(dirPath);
+        string folder = ((int)yaw).ToString("D3");
 
-        string filePath = Path.Combine(dirPath, "render.png");
+        string dir = Path.Combine(Application.dataPath, "..", outputRoot, modelName, folder);
+        Directory.CreateDirectory(dir);
 
-        // 32-bit depth + ARGB32 are both required for a real alpha channel.
-        // The old 24-bit depth buffer had no alpha at all — transparent renders
-        // came out black because there was nowhere for the alpha data to live.
-        RenderTexture rt = new RenderTexture(renderWidth, renderHeight, 32,
-            RenderTextureFormat.ARGB32);
+        string path = Path.Combine(dir, "render.png");
+
+        RenderTexture rt = new RenderTexture(renderWidth, renderHeight, 32, RenderTextureFormat.ARGB32);
         rt.antiAliasing = antiAliasing;
         rt.Create();
 
-        CameraClearFlags originalClearFlags = cam.clearFlags;
-        Color             originalBgColor   = cam.backgroundColor;
+        var oldFlags = cam.clearFlags;
+        var oldColor = cam.backgroundColor;
 
-        // Force Solid Color + fully transparent black regardless of what the
-        // camera has set in its Inspector. Skybox and Depth clear modes ignore
-        // backgroundColor.a entirely and will always produce a black background.
         if (transparentBackground)
         {
-            cam.clearFlags      = CameraClearFlags.SolidColor;
-            cam.backgroundColor = new Color(0f, 0f, 0f, 0f);
+            cam.clearFlags = CameraClearFlags.SolidColor;
+            cam.backgroundColor = new Color(0, 0, 0, 0);
         }
 
         cam.targetTexture = rt;
         cam.Render();
-        cam.targetTexture   = null;
+        cam.targetTexture = null;
 
-        // Restore camera state immediately after render
-        cam.clearFlags      = originalClearFlags;
-        cam.backgroundColor = originalBgColor;
+        cam.clearFlags = oldFlags;
+        cam.backgroundColor = oldColor;
 
-        // Read pixels back into a Texture2D.
-        // Must be RGBA32 — RGB24 silently discards the alpha channel, making
-        // the PNG encoder write a fully opaque image.
         RenderTexture.active = rt;
-        TextureFormat fmt = transparentBackground ? TextureFormat.RGBA32 : TextureFormat.RGB24;
-        Texture2D tex     = new Texture2D(renderWidth, renderHeight, fmt, false);
+
+        Texture2D tex = new Texture2D(renderWidth, renderHeight, TextureFormat.RGBA32, false);
         tex.ReadPixels(new Rect(0, 0, renderWidth, renderHeight), 0, 0);
         tex.Apply();
+
         RenderTexture.active = null;
 
-        // Write PNG — EncodeToPNG preserves the alpha channel when the texture is RGBA32
-        File.WriteAllBytes(filePath, tex.EncodeToPNG());
+        File.WriteAllBytes(path, tex.EncodeToPNG());
 
-        // Cleanup — Release() frees GPU memory before DestroyImmediate,
-        // important when rendering many frames back-to-back
         Object.DestroyImmediate(tex);
         rt.Release();
         Object.DestroyImmediate(rt);
+    }
 
-        Debug.Log($"[TurntableRenderer] Saved angle {yaw:000}° → {filePath}");
+    void OnDisable()
+    {
+        EditorApplication.update -= OnEditorUpdate;
     }
 }
-
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  Custom Inspector + Menu Item
-// ─────────────────────────────────────────────────────────────────────────────
 
 #if UNITY_EDITOR
 [CustomEditor(typeof(IsometricTurntableRenderer))]
@@ -208,38 +283,18 @@ public class IsometricTurntableRendererEditor : Editor
     {
         DrawDefaultInspector();
 
-        GUILayout.Space(12);
+        GUILayout.Space(10);
 
-        IsometricTurntableRenderer renderer = (IsometricTurntableRenderer)target;
+        var renderer = (IsometricTurntableRenderer)target;
 
-        GUI.backgroundColor = new Color(0.4f, 0.8f, 0.4f);
-        if (GUILayout.Button("▶  Render All Angles", GUILayout.Height(36)))
+        GUI.backgroundColor = Color.green;
+
+        if (GUILayout.Button("▶ Render All Models", GUILayout.Height(40)))
         {
-            renderer.RenderAllAngles();
+            renderer.StartRender();
         }
+
         GUI.backgroundColor = Color.white;
-
-        GUILayout.Space(4);
-        EditorGUILayout.HelpBox(
-            "Output:  <Project>/" + renderer.outputRoot + "/" + renderer.batchName + "/\n" +
-            "Folders: 000  030  060  090  120  150  180  210  240  270  300  330\n" +
-            "Each folder contains render.png",
-            MessageType.Info);
-    }
-}
-
-public static class TurntableMenu
-{
-    [MenuItem("Tools/Isometric Turntable/Render All Angles")]
-    public static void RenderFromMenu()
-    {
-        IsometricTurntableRenderer renderer = Object.FindObjectOfType<IsometricTurntableRenderer>();
-        if (renderer == null)
-        {
-            Debug.LogError("[TurntableRenderer] No IsometricTurntableRenderer found in scene.");
-            return;
-        }
-        renderer.RenderAllAngles();
     }
 }
 #endif
