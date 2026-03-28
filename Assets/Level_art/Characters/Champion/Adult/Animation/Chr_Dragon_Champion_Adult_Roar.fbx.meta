@@ -63,14 +63,14 @@ ModelImporter:
         intParameter: 1
         messageOptions: 0
       - time: 0.26037142
-        functionName: EnableVfx
+        functionName: StartFlamethrower
         data: 
         objectReferenceParameter: {instanceID: 0}
         floatParameter: 0
         intParameter: 1
         messageOptions: 0
       - time: 0.7820185
-        functionName: DisableVfx
+        functionName: StopFlamethrower
         data: 
         objectReferenceParameter: {instanceID: 0}
         floatParameter: 0
