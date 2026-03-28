@@ -57,11 +57,18 @@ public class TerrainPainter : MonoBehaviour
 
             PaintCircle(worldPos, radius);
 
+            // 🔥 CRITICAL FIX: sync freeze with melt
+            float meltRatio = radius / brushSize;
+            freezeProgress = Mathf.Clamp01(1f - meltRatio);
+
             elapsed += Time.deltaTime;
             yield return null;
         }
 
         PaintCircle(worldPos, brushSize);
+
+        // fully melted → no freeze
+        freezeProgress = 0f;
     }
 
     void PaintCircle(Vector3 worldPos, float radius)
@@ -145,7 +152,7 @@ public class TerrainPainter : MonoBehaviour
         if (stopFreezing)
             return;
 
-        // 🔥 SPEED BASED (NO RESET)
+        // 🔥 SPEED BASED FREEZE
         freezeProgress += freezeSpeed * Time.deltaTime;
         freezeProgress = Mathf.Clamp01(freezeProgress);
 
