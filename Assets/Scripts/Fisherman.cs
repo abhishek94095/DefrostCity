@@ -170,6 +170,7 @@ public class Fisherman : MonoBehaviour
         if (fisherman.coughtFishCount <= 0) return;
         StartCoroutine(FeedFishSequence(fisherman));
         dragon.FeedAnimation();
+        dragon.MeltIce();
     }
     IEnumerator FeedFishSequence(Fisherman fisherman)
     {

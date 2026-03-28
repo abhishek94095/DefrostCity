@@ -24,6 +24,7 @@ public class DragonController : MonoBehaviour
     public int[] requirements = { 2, 5, 10 }; // Fish needed for Stage 1, 2, 3
     private int fishFed = 0;
     public bool IsBusy { get; private set; }
+
     public void OnDisable()
     {
         terrainPainter.ResetToOriginal();
@@ -41,6 +42,8 @@ public class DragonController : MonoBehaviour
         DOVirtual.DelayedCall(3f, () => upgradeEffect.SetActive(false));
         currentStage++;
         terrainPainter.StartPaint(45);
+        terrainPainter.StopFreezing(); // Stop any ongoing freezing
+        DOVirtual.DelayedCall(3f, () => terrainPainter.DebugResumeFreeze());
         fishCountText.text = Math.Max(0,requirements[currentStage - 1] - fishFed).ToString(); // Update UI with remaining fish needed
     }
 
@@ -101,6 +104,13 @@ public class DragonController : MonoBehaviour
         IsBusy = false;
     }
     public bool canAddCoins = true;
+
+    public void MeltIce()
+    {
+        terrainPainter.stopFreezing = true; // Stop any ongoing freezing
+        terrainPainter.StartPaint(terrainPainter.brushSize + 10);
+        DOVirtual.DelayedCall(3f, () => terrainPainter.stopFreezing = false);
+    }
     public void FeedFishOneByOne(int fishAmount)
     {
         if (fishAmount <= 0) return;
