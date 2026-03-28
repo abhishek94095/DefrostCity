@@ -58,14 +58,7 @@ ModelImporter:
       - time: 0
         functionName: PlayAnimationSound
         data: Sfx_Dragon_Idle_Head
-        objectReferenceParameter: {fileID: 11500000, guid: 9dbe343217a89495589aa439d7d2e787, type: 3}
-        floatParameter: 0
-        intParameter: 0
-        messageOptions: 0
-      - time: 0
-        functionName: PlayAnimationSound
-        data: Sfx_Dragon_Idle_Head
-        objectReferenceParameter: {fileID: 11500000, guid: 9dbe343217a89495589aa439d7d2e787, type: 3}
+        objectReferenceParameter: {instanceID: 0}
         floatParameter: 0
         intParameter: 0
         messageOptions: 0

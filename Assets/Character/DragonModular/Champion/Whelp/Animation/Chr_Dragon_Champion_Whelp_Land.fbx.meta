@@ -21,7 +21,7 @@ ModelImporter:
     animationRetargetingWarnings: 
     animationDoRetargetingWarnings: 0
     importAnimatedCustomProperties: 0
-    importConstraints: 0
+    importConstraints: 1
     animationCompression: 3
     animationRotationError: 0.7
     animationPositionError: 0.7
@@ -54,14 +54,7 @@ ModelImporter:
       mirror: 0
       bodyMask: 01000000010000000100000001000000010000000100000001000000010000000100000001000000010000000100000001000000
       curves: []
-      events:
-      - time: 0
-        functionName: PlayAnimationSound
-        data: Sfx_Dragon_Champion_Whelp_Land
-        objectReferenceParameter: {fileID: 11500000, guid: 9dbe343217a89495589aa439d7d2e787, type: 3}
-        floatParameter: 0
-        intParameter: 0
-        messageOptions: 0
+      events: []
       transformMask: []
       maskType: 3
       maskSource: {instanceID: 0}
@@ -70,7 +63,7 @@ ModelImporter:
       name: Chr_Dragon_Champion_Whelp_DragonPit_Enter
       takeName: Take 001
       internalID: -998496362607748373
-      firstFrame: 24
+      firstFrame: 0
       lastFrame: 68
       wrapMode: 0
       orientationOffsetY: 0
@@ -90,14 +83,7 @@ ModelImporter:
       mirror: 0
       bodyMask: 01000000010000000100000001000000010000000100000001000000010000000100000001000000010000000100000001000000
       curves: []
-      events:
-      - time: 0
-        functionName: PlayAnimationSound
-        data: Sfx_Dragon_Champion_Whelp_Dragon_Pit_Enter
-        objectReferenceParameter: {fileID: 11500000, guid: 9dbe343217a89495589aa439d7d2e787, type: 3}
-        floatParameter: 1
-        intParameter: 0
-        messageOptions: 0
+      events: []
       transformMask: []
       maskType: 3
       maskSource: {instanceID: 0}

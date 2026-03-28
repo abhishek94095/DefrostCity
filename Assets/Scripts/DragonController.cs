@@ -11,7 +11,7 @@ public class DragonController : MonoBehaviour
     public Animator dragonAnimator;
     public Transform[] spawnPoints;
     public TerrainPainter terrainPainter;
-    public GameObject endScreen, DragonLevel2;
+    public GameObject endScreen, DragonLevel2, loseLevelScreen;
     public GameObject villagerAnimation; // Visual for "freeing villagers"
     public Transform plate;
     public TextMeshProUGUI fishCountText;
@@ -148,5 +148,10 @@ public class DragonController : MonoBehaviour
         terrainPainter.StartPaint(75);
         dragonAnimator.SetTrigger("Upgrade3");
         DOVirtual.DelayedCall(3f, () => terrainPainter.StartPaint(800));
+    }
+
+    void Start()
+    {
+        terrainPainter.StartFreezing(() => loseLevelScreen.SetActive(true));
     }
 }

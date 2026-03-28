@@ -37510,6 +37510,7 @@ MonoBehaviour:
   terrainPainter: {fileID: 1453450492}
   endScreen: {fileID: 376465893}
   DragonLevel2: {fileID: 562373711}
+  loseLevelScreen: {fileID: 376465893}
   villagerAnimation: {fileID: 0}
   plate: {fileID: 971488882}
   fishCountText: {fileID: 1319770439}
