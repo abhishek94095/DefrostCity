@@ -37982,11 +37982,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   terrain: {fileID: 1453450491}
-  brushSize: 60
+  brushSize: 25
   worldPos: {fileID: 1815660830}
   multiplier: 2
   freezeSpeed: 0.05
-  stopFreezing: 0
+  stopFreezing: 1
 --- !u!1001 &1456293493
 PrefabInstance:
   m_ObjectHideFlags: 0
