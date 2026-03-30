@@ -3,9 +3,14 @@ guid: f874e6658cebb534fbfd39ae803f7055
 ModelImporter:
   serializedVersion: 22200
   internalIDToNameTable: []
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Spwn_Wildling_Chr_Spwn_Wildlings_Mat
+    second: {fileID: 2100000, guid: d8782ed12134137409a4929834f007d8, type: 2}
   materials:
-    materialImportMode: 2
+    materialImportMode: 1
     materialName: 0
     materialSearch: 1
     materialLocation: 1

@@ -27855,15 +27855,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 9551fe14c814d5a4a9f93588c2b98edb, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 0.004855825
+      value: 0.06
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 9551fe14c814d5a4a9f93588c2b98edb, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -0.00027255682
+      value: 0.03
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 9551fe14c814d5a4a9f93588c2b98edb, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -0.004642014
+      value: 0.05
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 9551fe14c814d5a4a9f93588c2b98edb, type: 3}
       propertyPath: m_LocalRotation.w
@@ -27871,27 +27871,27 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 9551fe14c814d5a4a9f93588c2b98edb, type: 3}
       propertyPath: m_LocalRotation.x
-      value: -0.013121033
+      value: -0.013121039
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 9551fe14c814d5a4a9f93588c2b98edb, type: 3}
       propertyPath: m_LocalRotation.y
-      value: -0.08203449
+      value: -0.0820345
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 9551fe14c814d5a4a9f93588c2b98edb, type: 3}
       propertyPath: m_LocalRotation.z
-      value: -0.0137653
+      value: -0.013765357
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 9551fe14c814d5a4a9f93588c2b98edb, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
-      value: -1.628
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 9551fe14c814d5a4a9f93588c2b98edb, type: 3}
       propertyPath: m_LocalEulerAnglesHint.y
-      value: -9.392
+      value: -10.808
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 9551fe14c814d5a4a9f93588c2b98edb, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
-      value: -1.449
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -7511558181221131132, guid: 9551fe14c814d5a4a9f93588c2b98edb, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
@@ -27903,7 +27903,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: 9551fe14c814d5a4a9f93588c2b98edb, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -37886,6 +37886,8 @@ MonoBehaviour:
   level3SnowPathParent: {fileID: 125452333}
   requirements: 0a00000014000000
   canAddCoins: 1
+  dragonFlyDelayForFlameStart: 2
+  dragonFlyDelayForFlameEnd: 5
 --- !u!1 &1416733263
 GameObject:
   m_ObjectHideFlags: 0
@@ -51047,15 +51049,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 9551fe14c814d5a4a9f93588c2b98edb, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 0.004855825
+      value: 0.06
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 9551fe14c814d5a4a9f93588c2b98edb, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -0.00027255682
+      value: 0.03
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 9551fe14c814d5a4a9f93588c2b98edb, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -0.004642014
+      value: 0.05
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 9551fe14c814d5a4a9f93588c2b98edb, type: 3}
       propertyPath: m_LocalRotation.w
@@ -51099,7 +51101,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: 9551fe14c814d5a4a9f93588c2b98edb, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
