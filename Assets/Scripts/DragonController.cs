@@ -149,10 +149,15 @@ public class DragonController : MonoBehaviour
         SoundController.Instance.PlaySFX(SoundType.Win);
         terrainPainter.StartPaint(75);
         dragonAnimator.SetTrigger("Upgrade3");
+        DOVirtual.DelayedCall(dragonFlyDelayForFlameStart, () => StartFlamethrower());
+        DOVirtual.DelayedCall(dragonFlyDelayForFlameEnd, () => StopFlamethrower());
         terrainPainter.StopFreezing(); // Stop any ongoing freezing
         terrainPainter.isGameOver = true; // Stop all freezing logic
         DOVirtual.DelayedCall(3f, () => terrainPainter.StartPaint(800));
     }
+
+    public float dragonFlyDelayForFlameStart = 2f;
+    public float dragonFlyDelayForFlameEnd = 5f;
 
     void Start()
     {
