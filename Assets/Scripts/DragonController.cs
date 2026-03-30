@@ -44,9 +44,9 @@ public class DragonController : MonoBehaviour
         currentStage++;
         terrainPainter.StartPaint(45);
         terrainPainter.StopFreezing(); // Stop any ongoing freezing
-        DOVirtual.DelayedCall(8f, () => terrainPainter.DebugResumeFreeze());
+        DOVirtual.DelayedCall(8f, () => terrainPainter.stopFreezing = false); // Resume freezing after delay
         fishCountText.text = Math.Max(0,requirements[currentStage - 1] - fishFed).ToString(); // Update UI with remaining fish needed
-    }
+    }   
 
     public void UpgradeDragon()
     {

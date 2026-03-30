@@ -1,252 +1,273 @@
 using UnityEngine;
-using System.Collections;
 using System;
+using System.Collections;
 
 public class TerrainPainter : MonoBehaviour
 {
     public Terrain terrain;
-
-    const int FREEZE_LAYER = 4;
-    const int GRASS_LAYER = 0;
-
-    public int brushSize = 5;
     public Transform worldPos;
 
-    public float multiplier = 1f;
+    const int FREEZE_LAYER = 4;
+    const int GRASS_LAYER  = 0;
 
-    // ─────────────────────────────────────
-    // ❄️ FREEZE SYSTEM
-
-    [Header("Freeze Settings")]
-    [Tooltip("1 = full freeze in 1 sec, 0.166 = ~6 sec")]
+    public int   brushSize   = 5;
+    public float multiplier  = 1f;
     public float freezeSpeed = 0.166f;
-
-    public bool stopFreezing = false;
-    public bool isGameOver = false;
+    public bool  stopFreezing = false;
+    public bool  isGameOver   = false;
 
     private float freezeProgress = 0f;
     private Action onFreezeComplete;
 
-    public void Start()
+    // ── Throttle state ─────────────────────────
+    private int   _skipFrame = 0;
+    const   int   FLUSH_EVERY = 2;          // write every N frames
+
+    // ── Dirty-rect helpers ─────────────────────
+    /// Read only the brush bounding box, not the whole map.
+    private float[,,] ReadDirtyRegion(int cx, int cz, int radius,
+                                       out int x0, out int z0,
+                                       out int w,  out int h)
     {
-        StartPaintTest();
+        TerrainData data = terrain.terrainData;
+        x0 = Mathf.Max(0, cx - radius);
+        z0 = Mathf.Max(0, cz - radius);
+        int x1 = Mathf.Min(data.alphamapWidth  - 1, cx + radius);
+        int z1 = Mathf.Min(data.alphamapHeight - 1, cz + radius);
+        w  = x1 - x0 + 1;
+        h  = z1 - z0 + 1;
+        return data.GetAlphamaps(x0, z0, w, h);
     }
 
-    // ─────────────────────────────────────
-    // 🔥 MELT (GRASS)
-
-    [ContextMenu("Paint Test")]
-    public void StartPaintTest()
+    /// Convert world position → alphamap cell centre.
+    private (int cx, int cz) WorldToAlphamap(Vector3 wp)
     {
-        StartPaint(brushSize);
+        TerrainData data = terrain.terrainData;
+        Vector3 local = wp - terrain.transform.position;
+        int cx = (int)((local.x / data.size.x) * data.alphamapWidth);
+        int cz = (int)((local.z / data.size.z) * data.alphamapHeight);
+        return (cx, cz);
     }
 
-    public void StartPaint(int brushSize)
-    {
-        this.brushSize = brushSize;
-        StartCoroutine(PaintRoutine(worldPos.position));
-    }
+    // ── Paint (melt / grass) ───────────────────
+    public void StartPaint(int size) { brushSize = size; StartCoroutine(PaintRoutine(worldPos.position)); }
 
-    IEnumerator PaintRoutine(Vector3 worldPos, float duration = 1.5f)
+    IEnumerator PaintRoutine(Vector3 wp, float duration = 1.5f)
     {
         float elapsed = 0f;
-
         while (elapsed < duration)
         {
-            float t = elapsed / duration;
+            float t      = elapsed / duration;
             float radius = Mathf.Lerp(1f, brushSize, t);
-
-            PaintCircle(worldPos, radius);
-
-            // 🔥 CRITICAL FIX: sync freeze with melt
-            float meltRatio = radius / brushSize;
-            freezeProgress = Mathf.Clamp01(1f - meltRatio);
-
+            PaintCircleFast(wp, radius, GRASS_LAYER);
+            freezeProgress = Mathf.Clamp01(1f - radius / brushSize);
             elapsed += Time.deltaTime;
             yield return null;
         }
-
-        PaintCircle(worldPos, brushSize);
-
-        // fully melted → no freeze
+        PaintCircleFast(wp, brushSize, GRASS_LAYER);
         freezeProgress = 0f;
     }
 
-    void PaintCircle(Vector3 worldPos, float radius)
+    void PaintCircleFast(Vector3 wp, float radius, int targetLayer)
     {
-        TerrainData data = terrain.terrainData;
-
-        int mapWidth = data.alphamapWidth;
-        int mapHeight = data.alphamapHeight;
-
-        Vector3 terrainPos = worldPos - terrain.transform.position;
-
-        int x = (int)((terrainPos.x / data.size.x) * mapWidth);
-        int z = (int)((terrainPos.z / data.size.z) * mapHeight);
-
+        var (cx, cz) = WorldToAlphamap(wp);
         int brush = Mathf.RoundToInt(radius);
 
-        float[,,] alpha = data.GetAlphamaps(0, 0, mapWidth, mapHeight);
+        // ── KEY CHANGE: only read the dirty bounding box ──
+        float[,,] alpha = ReadDirtyRegion(cx, cz, brush,
+                              out int x0, out int z0, out int w, out int h);
 
-        for (int i = -brush; i <= brush; i++)
+        int layers = alpha.GetLength(2);
+        int brushSq = brush * brush;
+
+        for (int dz = 0; dz < h; dz++)
         {
-            for (int j = -brush; j <= brush; j++)
+            for (int dx = 0; dx < w; dx++)
             {
-                int px = x + i;
-                int pz = z + j;
+                int lx = (x0 + dx) - cx;
+                int lz = (z0 + dz) - cz;
+                float distSq = lx * lx + lz * lz;   // no Sqrt!
+                if (distSq > brushSq) continue;
 
-                if (px < 0 || px >= mapWidth || pz < 0 || pz >= mapHeight)
-                    continue;
+                float normalized = Mathf.Sqrt(distSq) / brush;
+                float strength   = Mathf.Clamp01((1f - normalized) * multiplier);
 
-                float dist = Mathf.Sqrt(i * i + j * j);
-                if (dist > brush)
-                    continue;
-
-                float normalized = dist / brush;
-                float strength = (1f - normalized) * multiplier;
-                strength = Mathf.Clamp01(strength);
-
-                for (int l = 0; l < alpha.GetLength(2); l++)
-                    alpha[pz, px, l] *= (1 - strength);
-
-                alpha[pz, px, GRASS_LAYER] += strength;
+                for (int l = 0; l < layers; l++)
+                    alpha[dz, dx, l] *= (1f - strength);
+                alpha[dz, dx, targetLayer] += strength;
             }
         }
 
-        data.SetAlphamaps(0, 0, alpha);
+        // ── KEY CHANGE: write only the dirty bounding box ──
+        terrain.terrainData.SetAlphamaps(x0, z0, alpha);
     }
 
-    // ─────────────────────────────────────
-    // ❄️ FREEZE CONTROL
-
-    [ContextMenu("Start Freezing")]
-    public void DebugStartFreeze()
+    // ── Freeze (Update-driven) ─────────────────
+    void Update()
     {
-        StartFreezing(() => Debug.Log("Fully Frozen ✅"));
-    }
+        if (stopFreezing || isGameOver) return;
+        freezeProgress += freezeSpeed * Time.deltaTime;
+        freezeProgress  = Mathf.Clamp01(freezeProgress);
+        _skipFrame++;
+        if (_skipFrame < FLUSH_EVERY) return;
+        _skipFrame = 0;
+        // frozenInnerRadius shrinks from brushSize → 0 as freeze progresses
+        float frozenInnerRadius = Mathf.Lerp(brushSize, 0f, freezeProgress);
+        PaintFreezeInwardFast(worldPos.position, frozenInnerRadius);
 
-    [ContextMenu("Stop Freezing")]
-    public void DebugStopFreeze()
+        if (freezeProgress >= 1f) onFreezeComplete?.Invoke();
+    }
+void PaintFreezeInwardFast(Vector3 wp, float innerRadius)
+{
+    var (cx, cz) = WorldToAlphamap(wp);
+    int outer = Mathf.RoundToInt(brushSize);
+
+    float[,,] alpha = ReadDirtyRegion(cx, cz, outer,
+                          out int x0, out int z0, out int w, out int h);
+
+    int layers = alpha.GetLength(2);
+
+    for (int dz = 0; dz < h; dz++)
     {
-        stopFreezing = true;
+        for (int dx = 0; dx < w; dx++)
+        {
+            int lx = (x0 + dx) - cx;
+            int lz = (z0 + dz) - cz;
+            float dist = Mathf.Sqrt(lx * lx + lz * lz);
+
+            if (dist > brushSize) continue;
+
+            float strength;
+
+            if (dist >= innerRadius)
+            {
+                // Outside the remaining grass centre — paint freeze
+                float normalized = (dist - innerRadius) / Mathf.Max(brushSize - innerRadius, 0.001f);
+                normalized = Mathf.SmoothStep(0f, 1f, normalized);
+                strength = Mathf.Clamp01((normalized * 0.7f + 0.3f) * multiplier);
+
+                for (int l = 0; l < layers; l++)
+                    alpha[dz, dx, l] *= (1f - strength);
+                alpha[dz, dx, FREEZE_LAYER] += strength;
+            }
+            else
+            {
+                // Inside remaining grass zone — restore grass
+                float edgeDist = 1f - (dist / Mathf.Max(innerRadius, 0.001f));
+                strength = Mathf.Clamp01(edgeDist * multiplier);
+
+                for (int l = 0; l < layers; l++)
+                    alpha[dz, dx, l] *= (1f - strength);
+                alpha[dz, dx, GRASS_LAYER] += strength;
+            }
+        }
     }
 
-    [ContextMenu("Resume Freezing")]
-    public void DebugResumeFreeze()
+    terrain.terrainData.SetAlphamaps(x0, z0, alpha);
+}
+    void PaintFreezeFullFast(Vector3 wp, float frozenRadius)
     {
-        stopFreezing = false;
+        var (cx, cz) = WorldToAlphamap(wp);
+        int outer = Mathf.RoundToInt(brushSize);   // always read full brush area
+
+        float[,,] alpha = ReadDirtyRegion(cx, cz, outer,
+                            out int x0, out int z0, out int w, out int h);
+
+        int layers = alpha.GetLength(2);
+
+        for (int dz = 0; dz < h; dz++)
+        {
+            for (int dx = 0; dx < w; dx++)
+            {
+                int lx = (x0 + dx) - cx;
+                int lz = (z0 + dz) - cz;
+                float dist = Mathf.Sqrt(lx * lx + lz * lz);
+
+                if (dist > brushSize) continue;
+
+                float strength;
+
+                if (dist <= frozenRadius)
+                {
+                    // Inside frozen zone — paint freeze with soft edge
+                    float normalized = dist / Mathf.Max(frozenRadius, 0.001f);
+                    normalized = Mathf.SmoothStep(0f, 1f, normalized);
+                    strength = Mathf.Clamp01((1f - normalized * 0.3f) * multiplier);
+
+                    for (int l = 0; l < layers; l++)
+                        alpha[dz, dx, l] *= (1f - strength);
+                    alpha[dz, dx, FREEZE_LAYER] += strength;
+                }
+                else
+                {
+                    // Outside frozen zone but inside brush — restore grass
+                    float edgeDist = (dist - frozenRadius) / Mathf.Max(brushSize - frozenRadius, 0.001f);
+                    strength = Mathf.Clamp01((1f - edgeDist) * multiplier);
+
+                    for (int l = 0; l < layers; l++)
+                        alpha[dz, dx, l] *= (1f - strength);
+                    alpha[dz, dx, GRASS_LAYER] += strength;
+                }
+            }
+        }
+
+        terrain.terrainData.SetAlphamaps(x0, z0, alpha);
     }
 
+    void PaintFreezeRingFast(Vector3 wp, float outerRadius, float innerRadius)
+    {
+        var (cx, cz) = WorldToAlphamap(wp);
+        int outer = Mathf.RoundToInt(outerRadius);
+
+        float[,,] alpha = ReadDirtyRegion(cx, cz, outer,
+                              out int x0, out int z0, out int w, out int h);
+
+        int layers  = alpha.GetLength(2);
+        float range = outerRadius - innerRadius;
+
+        for (int dz = 0; dz < h; dz++)
+        {
+            for (int dx = 0; dx < w; dx++)
+            {
+                int lx = (x0 + dx) - cx;
+                int lz = (z0 + dz) - cz;
+                float dist = Mathf.Sqrt(lx * lx + lz * lz);
+
+                if (dist > outerRadius || dist < innerRadius) continue;
+
+                float normalized = (range > 0.001f) ? (dist - innerRadius) / range : 1f;
+                normalized = Mathf.SmoothStep(0, 1, normalized);
+                float strength = Mathf.Clamp01((1f - normalized) * multiplier);
+
+                for (int l = 0; l < layers; l++)
+                    alpha[dz, dx, l] *= (1f - strength);
+                alpha[dz, dx, FREEZE_LAYER] += strength;
+            }
+        }
+
+        terrain.terrainData.SetAlphamaps(x0, z0, alpha);
+    }
+
+    // ── Freeze control ─────────────────────────
     public void StartFreezing(Action onComplete = null)
     {
         onFreezeComplete = onComplete;
         stopFreezing = false;
     }
+    public void StopFreezing()  => stopFreezing = true;
 
-    public void StopFreezing()
-    {
-        stopFreezing = true;
-    }
-
-    void Update()
-    {
-        if (stopFreezing || isGameOver)
-            return;
-
-        // 🔥 SPEED BASED FREEZE
-        freezeProgress += freezeSpeed * Time.deltaTime;
-        freezeProgress = Mathf.Clamp01(freezeProgress);
-
-        float outer = brushSize;
-        float inner = Mathf.Lerp(brushSize, 0f, freezeProgress);
-
-        PaintFreezeRing(worldPos.position, outer, inner);
-
-        if (freezeProgress >= 1f)
-        {
-            onFreezeComplete?.Invoke();
-        }
-    }
-
-    // ─────────────────────────────────────
-    // ❄️ FREEZE RING
-
-    void PaintFreezeRing(Vector3 worldPos, float outerRadius, float innerRadius)
-    {
-        TerrainData data = terrain.terrainData;
-
-        int mapWidth = data.alphamapWidth;
-        int mapHeight = data.alphamapHeight;
-
-        Vector3 terrainPos = worldPos - terrain.transform.position;
-
-        int x = (int)((terrainPos.x / data.size.x) * mapWidth);
-        int z = (int)((terrainPos.z / data.size.z) * mapHeight);
-
-        int outer = Mathf.RoundToInt(outerRadius);
-        int inner = Mathf.RoundToInt(innerRadius);
-
-        float[,,] alpha = data.GetAlphamaps(0, 0, mapWidth, mapHeight);
-
-        for (int i = -outer; i <= outer; i++)
-        {
-            for (int j = -outer; j <= outer; j++)
-            {
-                int px = x + i;
-                int pz = z + j;
-
-                if (px < 0 || px >= mapWidth || pz < 0 || pz >= mapHeight)
-                    continue;
-
-                float dist = Mathf.Sqrt(i * i + j * j);
-
-                if (dist > outer || dist < inner)
-                    continue;
-
-                float normalized = (dist - inner) / (outer - inner);
-                normalized = Mathf.SmoothStep(0, 1, normalized);
-
-                float strength = (1f - normalized) * multiplier;
-                strength = Mathf.Clamp01(strength);
-
-                for (int l = 0; l < alpha.GetLength(2); l++)
-                    alpha[pz, px, l] *= (1 - strength);
-
-                alpha[pz, px, FREEZE_LAYER] += strength;
-            }
-        }
-
-        data.SetAlphamaps(0, 0, alpha);
-    }
-
-    // ─────────────────────────────────────
-    // 🔁 RESET
-
-    [ContextMenu("Reset Original (Snow)")]
+    // ── Reset ──────────────────────────────────
+    [ContextMenu("Reset to Snow")]
     public void ResetToOriginal()
     {
         TerrainData data = terrain.terrainData;
-
-        int width = data.alphamapWidth;
-        int height = data.alphamapHeight;
-        int layers = data.alphamapLayers;
-
-        float[,,] alpha = new float[height, width, layers];
-
-        for (int z = 0; z < height; z++)
-        {
-            for (int x = 0; x < width; x++)
-            {
-                for (int l = 0; l < layers; l++)
-                    alpha[z, x, l] = 0f;
-
+        int W = data.alphamapWidth, H = data.alphamapHeight, L = data.alphamapLayers;
+        float[,,] alpha = new float[H, W, L];
+        for (int z = 0; z < H; z++)
+            for (int x = 0; x < W; x++)
                 alpha[z, x, FREEZE_LAYER] = 1f;
-            }
-        }
-
         data.SetAlphamaps(0, 0, alpha);
-
         freezeProgress = 0f;
-        stopFreezing = true;
+        stopFreezing   = true;
     }
 }
