@@ -38288,7 +38288,7 @@ TerrainCollider:
   m_Enabled: 1
   serializedVersion: 2
   m_TerrainData: {fileID: 15600000, guid: 3279e43b48e1aed499a8f3362ae8d2f5, type: 2}
-  m_EnableTreeColliders: 1
+  m_EnableTreeColliders: 0
 --- !u!218 &1453450491
 Terrain:
   m_ObjectHideFlags: 0
@@ -38342,10 +38342,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   terrain: {fileID: 1453450491}
-  brushSize: 25
+  brushSize: 40
   worldPos: {fileID: 1025625895}
   multiplier: 2
-  freezeSpeed: 0.05
+  freezeSpeed: 0.1
   stopFreezing: 1
   isGameOver: 0
 --- !u!1001 &1456293493
@@ -54168,7 +54168,7 @@ RectTransform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2119581376}
   m_LocalRotation: {x: -0.6797147, y: 0.1949051, z: 0.1949051, w: 0.6797147}
-  m_LocalPosition: {x: 0, y: 0, z: 8.82}
+  m_LocalPosition: {x: 0, y: 0, z: 9.41}
   m_LocalScale: {x: 2.0380435, y: 2.0380435, z: 2.0380435}
   m_ConstrainProportionsScale: 1
   m_Children:
@@ -54179,7 +54179,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: -90, y: 2, z: 30}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 10.43, y: 0}
+  m_AnchoredPosition: {x: 11.14, y: 0}
   m_SizeDelta: {x: 0.8, y: 0.8}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &2119581378
