@@ -6,8 +6,8 @@ public class TerrainPainter : MonoBehaviour
 {
     public Terrain terrain;
 
-    const int FREEZE_LAYER = 0;
-    const int GRASS_LAYER = 4;
+    const int FREEZE_LAYER = 4;
+    const int GRASS_LAYER = 0;
 
     public int brushSize = 5;
     public Transform worldPos;
@@ -22,6 +22,7 @@ public class TerrainPainter : MonoBehaviour
     public float freezeSpeed = 0.166f;
 
     public bool stopFreezing = false;
+    public bool isGameOver = false;
 
     private float freezeProgress = 0f;
     private Action onFreezeComplete;
@@ -149,7 +150,7 @@ public class TerrainPainter : MonoBehaviour
 
     void Update()
     {
-        if (stopFreezing)
+        if (stopFreezing || isGameOver)
             return;
 
         // 🔥 SPEED BASED FREEZE

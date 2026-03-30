@@ -55,7 +55,7 @@ ModelImporter:
       bodyMask: 01000000010000000100000001000000010000000100000001000000010000000100000001000000010000000100000001000000
       curves: []
       events:
-      - time: 0.28849763
+      - time: 0.2870351
         functionName: StartFlamethrower
         data: 
         objectReferenceParameter: {instanceID: 0}

@@ -62,21 +62,7 @@ ModelImporter:
         floatParameter: 0
         intParameter: 0
         messageOptions: 0
-      - time: 0.21354166
-        functionName: 
-        data: 
-        objectReferenceParameter: {instanceID: 0}
-        floatParameter: 0
-        intParameter: 0
-        messageOptions: 0
       - time: 0.37853774
-        functionName: StopFlamethrower
-        data: 
-        objectReferenceParameter: {instanceID: 0}
-        floatParameter: 0
-        intParameter: 0
-        messageOptions: 0
-      - time: 0.420765
         functionName: StopFlamethrower
         data: 
         objectReferenceParameter: {instanceID: 0}

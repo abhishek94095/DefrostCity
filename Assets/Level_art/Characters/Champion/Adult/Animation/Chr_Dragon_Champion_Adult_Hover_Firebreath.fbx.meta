@@ -42,7 +42,7 @@ ModelImporter:
       cycleOffset: 0
       loop: 0
       hasAdditiveReferencePose: 0
-      loopTime: 0
+      loopTime: 1
       loopBlend: 0
       loopBlendOrientation: 0
       loopBlendPositionY: 0
@@ -66,6 +66,13 @@ ModelImporter:
         functionName: StopFlamethrower
         data: 
         objectReferenceParameter: {instanceID: 0}
+        floatParameter: 0
+        intParameter: 0
+        messageOptions: 0
+      - time: 0
+        functionName: PlayAnimationSound
+        data: Sfx_Dragon_Champion_Adult_Hover_Firebreath
+        objectReferenceParameter: {fileID: 11500000, guid: 9dbe343217a89495589aa439d7d2e787, type: 3}
         floatParameter: 0
         intParameter: 0
         messageOptions: 0

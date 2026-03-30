@@ -18,6 +18,7 @@ public class Fisherman : MonoBehaviour
     private float timer = 0;
     private float coughtFishCount = 0;
     [SerializeField] private bool isFishing = false;
+    [SerializeField] private bool canUseSpear = false;
     private bool hasMovedToLocation = false;
     private bool isNearDragon = false;
     private bool wasMoving = false;
@@ -33,7 +34,8 @@ public class Fisherman : MonoBehaviour
 
     void Start()
     {
-        if(isFishing) animator.SetBool("IsFishing", true); // ⭐ ADD THIS
+        if(isFishing && !canUseSpear) animator.SetBool("IsFishing", true);
+        if(canUseSpear) animator.SetTrigger("IsSecondFisherman");
     }
     void Update()
     {
@@ -46,7 +48,7 @@ public class Fisherman : MonoBehaviour
         }
         bool isMoving = inputMagnitude > 0.1f;
         // 🎣 Fishing logic
-        if (isFishing)
+        if (isFishing || canUseSpear)
         {
             timer += Time.deltaTime;
 
@@ -235,8 +237,6 @@ public class Fisherman : MonoBehaviour
             Destroy(fish, 2.1f);
 
             dragon.FeedFishOneByOne(1);
-
-            yield return new WaitForSeconds(0.05f);
         }
     }
 
@@ -327,6 +327,11 @@ public class Fisherman : MonoBehaviour
 
     void StartFishing()
     {
+        if(canUseSpear)
+        {
+            animator.SetTrigger("IsSecondFisherman");
+            return;
+        }
         if (isFishing) return;
 
         isFishing = true;

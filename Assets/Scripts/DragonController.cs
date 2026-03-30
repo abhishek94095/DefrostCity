@@ -16,7 +16,7 @@ public class DragonController : MonoBehaviour
     public Transform plate;
     public TextMeshProUGUI fishCountText;
     public Image fishBGFill;
-    public GameObject flameThrowEffect, upgradeEffect;
+    public GameObject flameThrowEffectLevel2, flameThrowEffectLevel3, upgradeEffect;
     public GameObject[] currentDragonObjects;
     public Vector3 lowerPoint;
     public GameObject boatObject, endVillageViewObject;
@@ -38,6 +38,7 @@ public class DragonController : MonoBehaviour
         dragonAnimator = DragonLevel2.GetComponent<Animator>(); // Switch to new animator
         dragonAnimator.SetTrigger("Firebreath_L"); // Play upgrade animation
         //SpawnFishermen(spawnPoints.Length); // Spawns more as dragon grows
+        StartFlamethrower();
         upgradeEffect.SetActive(true);
         DOVirtual.DelayedCall(3f, () => upgradeEffect.SetActive(false));
         currentStage++;
@@ -53,7 +54,6 @@ public class DragonController : MonoBehaviour
         fishFed = 0;
         CurrencyHandler.Instance.AddGoldFromFish(4);
         SoundController.Instance.PlaySFX(SoundType.Upgrade);
-        flameThrowEffect.SetActive(true); 
         if (villagerAnimation != null) villagerAnimation.SetActive(true);
         MoveSnowDown();
         dragonAnimator.SetTrigger("Upgrade2");
@@ -77,12 +77,14 @@ public class DragonController : MonoBehaviour
 
     public void StartFlamethrower()
     {
-        flameThrowEffect.gameObject.SetActive(true);
+        flameThrowEffectLevel2.gameObject.SetActive(true);
+        flameThrowEffectLevel3.gameObject.SetActive(true);
     }
 
     public void StopFlamethrower()
     {
-        flameThrowEffect.gameObject.SetActive(false);
+        flameThrowEffectLevel2.gameObject.SetActive(false);
+        flameThrowEffectLevel3.gameObject.SetActive(false);
     }
 
     public void MoveSnowDown()
@@ -147,6 +149,8 @@ public class DragonController : MonoBehaviour
         SoundController.Instance.PlaySFX(SoundType.Win);
         terrainPainter.StartPaint(75);
         dragonAnimator.SetTrigger("Upgrade3");
+        terrainPainter.StopFreezing(); // Stop any ongoing freezing
+        terrainPainter.isGameOver = true; // Stop all freezing logic
         DOVirtual.DelayedCall(3f, () => terrainPainter.StartPaint(800));
     }
 
