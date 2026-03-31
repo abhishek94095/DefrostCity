@@ -237,7 +237,7 @@ AnimatorController:
     m_Type: 9
     m_DefaultFloat: 0
     m_DefaultInt: 0
-    m_DefaultBool: 0
+    m_DefaultBool: 1
     m_Controller: {fileID: 9100000}
   - m_Name: IsSecondFisherman
     m_Type: 9
@@ -618,7 +618,7 @@ AnimatorStateMachine:
     m_Position: {x: 200, y: -150, z: 0}
   - serializedVersion: 1
     m_State: {fileID: -6421158623303060482}
-    m_Position: {x: 40, y: 20, z: 0}
+    m_Position: {x: 210, y: -40, z: 0}
   - serializedVersion: 1
     m_State: {fileID: 5492090515795179653}
     m_Position: {x: -30, y: -90, z: 0}

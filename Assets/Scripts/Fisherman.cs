@@ -78,6 +78,7 @@ public class Fisherman : MonoBehaviour
             animator.SetBool("RunningStart", false);
             animator.SetBool("RunningEnd", true);
             wasMoving = false;
+            
             if(currentZone == InteractionType.FishingArea)
             {
                 Camera.main.DOOrthoSize(6, 0.5f);
@@ -93,6 +94,13 @@ public class Fisherman : MonoBehaviour
             transform.position = targetPos;
             Quaternion targetRot = Quaternion.LookRotation(move);
             transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, 10f * Time.deltaTime);
+        }
+        else
+        {
+            if (currentZone == InteractionType.Fisherman && !isFishing)
+            {
+                StartFishing();
+            }
         }
 
         HandleInteraction(inputMagnitude);
@@ -333,7 +341,7 @@ public class Fisherman : MonoBehaviour
             return;
         }
         if (isFishing) return;
-
+        
         isFishing = true;
         animator.SetBool("IsFishing", true);
     }
@@ -344,10 +352,6 @@ public class Fisherman : MonoBehaviour
         if (zone != null)
         {
             currentZone = zone.type;
-        }
-        if (zone.type == InteractionType.Fisherman)
-        {
-            StartFishing();
         }
     }
 

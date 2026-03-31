@@ -161,6 +161,6 @@ public class DragonController : MonoBehaviour
 
     void Start()
     {
-        terrainPainter.StartFreezing(() => loseLevelScreen.SetActive(true));
+        DOVirtual.DelayedCall(4.8f, () => terrainPainter.StartFreezing(() => loseLevelScreen.SetActive(true)));
     }
 }
