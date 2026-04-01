@@ -31,6 +31,19 @@ public class Fisherman : MonoBehaviour
     private bool hasTriggeredInteraction = false;
     private InteractionType currentZone = InteractionType.None;
     public PurchaseFishman purchaseFishman;
+    public Rigidbody rb;
+    private Vector2   _moveInput;
+    private bool      _isMoving;
+
+    [Header("Movement Bounds")]
+    [Tooltip("Layers that block movement: walls, rocks, buildings")]
+    public LayerMask obstacleLayer;
+
+    [Tooltip("Layers that block movement: water, forbidden zones")]
+    public LayerMask waterLayer;
+
+    [Tooltip("Sphere radius used for obstacle check — match BoxCollider half-width")]
+    public float collisionRadius = 0.4f;
 
     void Start()
     {
@@ -41,17 +54,21 @@ public class Fisherman : MonoBehaviour
     {
         float inputMagnitude = 0;
         Vector2 input = Vector2.zero;
-        if(joystick != null)
+        if (joystick != null)
         {
             input = joystick.Direction;
             inputMagnitude = input.magnitude;
         }
         bool isMoving = inputMagnitude > 0.1f;
-        // 🎣 Fishing logic
+
+        // Store for FixedUpdate (movement lives there now)
+        _moveInput = input;
+        _isMoving  = isMoving;
+
+        // 🎣 Fishing logic — IDENTICAL to yours
         if (isFishing || canUseSpear)
         {
             timer += Time.deltaTime;
-
             if (timer >= catchTime)
             {
                 CompleteCatch();
@@ -60,50 +77,117 @@ public class Fisherman : MonoBehaviour
 
         if (!isFollowingCamera) return;
 
-        // 🎯 Handle animation transitions ONLY on change
+        // 🎯 Animation transitions — IDENTICAL to yours
         if (isMoving && !wasMoving)
         {
-            // Started moving
             animator.SetBool("RunningStart", true);
             animator.SetBool("RunningEnd", false);
             wasMoving = true;
-            if(currentZone != InteractionType.FishingArea)
+            if (currentZone != InteractionType.FishingArea)
             {
-                Camera.main.DOOrthoSize(9,0.5f);
+                Camera.main.DOOrthoSize(9, 0.5f);
             }
         }
         else if (!isMoving && wasMoving)
         {
-            // Stopped moving
             animator.SetBool("RunningStart", false);
             animator.SetBool("RunningEnd", true);
             wasMoving = false;
-            
-            if(currentZone == InteractionType.FishingArea)
+            if (currentZone == InteractionType.FishingArea)
             {
                 Camera.main.DOOrthoSize(6, 0.5f);
             }
         }
 
-        // ✅ Movement
-        if (isMoving)
-        {
-            Vector3 move = new Vector3(input.x, 0f, input.y).normalized;
-            Vector3 targetPos = transform.position + move * speed * Time.deltaTime;
-            targetPos = GetGroundPosition(targetPos);
-            transform.position = targetPos;
-            Quaternion targetRot = Quaternion.LookRotation(move);
-            transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, 10f * Time.deltaTime);
-        }
-        else
+        // ✅ StartFishing when idle in zone — IDENTICAL to yours
+        if (!isMoving)
         {
             if (currentZone == InteractionType.Fisherman && !isFishing)
             {
                 StartFishing();
             }
+            
+        }
+
+        if(currentZone != InteractionType.Dragon || dragon.IsBusy)
+        {
+            foreach (GameObject fish in spawnedFish)
+            {
+                if (fish != null)
+                    fish.SetActive(false);
+            }
         }
 
         HandleInteraction(inputMagnitude);
+    }
+    void FixedUpdate()
+    {
+        if (!isFollowingCamera || !_isMoving) return;
+
+        Vector3 move = new Vector3(_moveInput.x, 0f, _moveInput.y).normalized;
+
+        // 1️⃣ Candidate next position (flat, no Y yet)
+        Vector3 nextPos = rb.position + move * speed * Time.fixedDeltaTime;
+
+        // 2️⃣ Clamp to terrain edges first (cheap, no raycast)
+        nextPos = ClampToTerrain(nextPos);
+
+        // 3️⃣ Check for obstacles and water at that position
+        Vector3 checkOrigin = nextPos + Vector3.up * 0.5f;
+        bool hitObstacle = Physics.CheckSphere(checkOrigin, collisionRadius, obstacleLayer);
+        bool hitWater    = Physics.CheckSphere(checkOrigin, collisionRadius, waterLayer);
+
+        if (hitObstacle || hitWater)
+        {
+            // Try sliding along each axis separately so player doesn't get stuck on corners
+            Vector3 slideX = rb.position + new Vector3(move.x, 0f, 0f) * speed * Time.fixedDeltaTime;
+            Vector3 slideZ = rb.position + new Vector3(0f, 0f, move.z) * speed * Time.fixedDeltaTime;
+
+            slideX = ClampToTerrain(slideX);
+            slideZ = ClampToTerrain(slideZ);
+
+            bool blockedX = Physics.CheckSphere(slideX + Vector3.up * 0.5f, collisionRadius, obstacleLayer | waterLayer);
+            bool blockedZ = Physics.CheckSphere(slideZ + Vector3.up * 0.5f, collisionRadius, obstacleLayer | waterLayer);
+
+            if      (!blockedX) nextPos = slideX;
+            else if (!blockedZ) nextPos = slideZ;
+            else                return; // fully blocked, don't move
+        }
+
+        // 4️⃣ Snap Y to ground
+        nextPos = GetGroundPosition(nextPos);
+
+        // 5️⃣ Apply
+        rb.MovePosition(nextPos);
+
+        // 6️⃣ Smooth rotation
+        Quaternion targetRot = Quaternion.LookRotation(move);
+        rb.MoveRotation(Quaternion.Slerp(rb.rotation, targetRot, 10f * Time.fixedDeltaTime));
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // Clamps position so the fisherman never walks off terrain edges
+    Vector3 ClampToTerrain(Vector3 pos)
+    {
+        Terrain terrain = Terrain.activeTerrain;
+        if (terrain == null) return pos;
+
+        Vector3 origin = terrain.transform.position;
+        TerrainData td = terrain.terrainData;
+
+        pos.x = Mathf.Clamp(pos.x, origin.x + collisionRadius, origin.x + td.size.x - collisionRadius);
+        pos.z = Mathf.Clamp(pos.z, origin.z + collisionRadius, origin.z + td.size.z - collisionRadius);
+        return pos;
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // Keep your existing GetGroundPosition unchanged
+    private Vector3 GetGroundPosition(Vector3 position)
+    {
+        Ray ray = new Ray(position + Vector3.up * 0.5f, Vector3.down);
+        if (Physics.Raycast(ray, out RaycastHit hit, 20f))
+            return hit.point;
+        return position;
     }
     public void CompleteCatch()
     {
@@ -140,6 +224,7 @@ public class Fisherman : MonoBehaviour
             elapsed += Time.deltaTime;
             yield return null;
         }
+        fish.SetActive(false);
     }
     
     public void StopFishing()
@@ -147,18 +232,6 @@ public class Fisherman : MonoBehaviour
         Debug.Log("Stop Fishing");
         isFishing = false;
         animator.SetBool("IsFishing", false); // ⭐ ADD THIS
-    }
-    
-    private Vector3 GetGroundPosition(Vector3 position)
-    {
-        Ray ray = new Ray(position + Vector3.up * 0.5f, Vector3.down);
-
-        if (Physics.Raycast(ray, out RaycastHit hit, 20f))
-        {
-            return hit.point;
-        }
-
-        return position; // fallback if nothing hit
     }
 
     internal void MoveToLocation(Vector3 startLocation)
@@ -223,9 +296,18 @@ public class Fisherman : MonoBehaviour
 
             GameObject fish = spawnedFish[0];
             Transform target = dragon.plate.transform;
-
             float duration = 0.1f;
             float elapsed = 0f;
+            if(!_isMoving && currentZone == InteractionType.Dragon)
+            {
+                fish.SetActive(true);
+            }
+            else
+            {
+                fish.SetActive(false);
+                yield return null;
+                continue;
+            }
 
             while (elapsed < duration)
             {

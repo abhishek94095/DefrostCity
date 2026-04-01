@@ -153,6 +153,7 @@ public class DragonController : MonoBehaviour
         DOVirtual.DelayedCall(dragonFlyDelayForFlameEnd, () => StopFlamethrower());
         terrainPainter.StopFreezing(); // Stop any ongoing freezing
         terrainPainter.isGameOver = true; // Stop all freezing logic
+        terrainPainter.snowMeter?.SetGameOver(); // Trigger snow meter game over animation
         DOVirtual.DelayedCall(3f, () => terrainPainter.StartPaint(800));
     }
 
