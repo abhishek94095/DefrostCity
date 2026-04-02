@@ -29,6 +29,9 @@ public class TerrainPainter : MonoBehaviour
     private int _skipFrame = 0;
     const   int FLUSH_EVERY = 2;
 
+    private Coroutine _paintCoroutine;
+    private Coroutine _resumeCoroutine;
+
     private float[,,] ReadDirtyRegion(int cx, int cz, int radius,
                                        out int x0, out int z0,
                                        out int w,  out int h)
@@ -56,12 +59,12 @@ public class TerrainPainter : MonoBehaviour
     public void StartPaint(int size)
     {
         brushSize = size;
-        StartCoroutine(PaintRoutine(worldPos.position));
+        if (_paintCoroutine != null) { StopCoroutine(_paintCoroutine); _paintCoroutine = null; }
+        _paintCoroutine = StartCoroutine(PaintRoutine(worldPos.position));
     }
 
     IEnumerator PaintRoutine(Vector3 wp, float duration = 1.5f)
     {
-        // Block freeze Update while melt is running
         stopFreezing = true;
 
         float elapsed = 0f;
@@ -75,12 +78,57 @@ public class TerrainPainter : MonoBehaviour
         }
 
         PaintCircleFast(wp, brushSize, GRASS_LAYER);
-
-        // Reset freeze progress so terrain starts freezing from scratch
         freezeProgress = 0f;
+        _paintCoroutine = null;
+        // stopFreezing intentionally left true — caller or ResumeFreezingAfter resumes
+    }
 
-        // Resume freezing — SnowMeter state is managed by whoever called StartPaint
-        stopFreezing = false;
+    // ── Dragon event handlers ─────────────────────────────────────
+    // Called once per feeding action; debounces the 3s resume timer so
+    // rapid fish feeds don't stack multiple PaintRoutine coroutines.
+    public void OnDragonFed()
+    {
+        stopFreezing = true;
+        snowMeter?.OnFishFed(2f);
+
+        if (_paintCoroutine == null)
+            _paintCoroutine = StartCoroutine(PaintRoutine(worldPos.position));
+
+        if (_resumeCoroutine != null) StopCoroutine(_resumeCoroutine);
+        _resumeCoroutine = StartCoroutine(ResumeFreezingAfter(3f));
+    }
+
+    public void OnDragonUpgraded(int snowMeterStage, int paintSize)
+    {
+        if (_paintCoroutine != null)  { StopCoroutine(_paintCoroutine);  _paintCoroutine  = null; }
+        if (_resumeCoroutine != null) { StopCoroutine(_resumeCoroutine); _resumeCoroutine = null; }
+
+        stopFreezing = true;
+        brushSize    = paintSize;
+        _paintCoroutine = StartCoroutine(PaintRoutine(worldPos.position));
+        snowMeter?.OnUpgrade(snowMeterStage);
+        _resumeCoroutine = StartCoroutine(ResumeFreezingAfter(8f));
+    }
+
+    public void OnFinalWin()
+    {
+        if (_paintCoroutine != null)  { StopCoroutine(_paintCoroutine);  _paintCoroutine  = null; }
+        if (_resumeCoroutine != null) { StopCoroutine(_resumeCoroutine); _resumeCoroutine = null; }
+
+        stopFreezing = true;
+        isGameOver   = true;
+        brushSize    = 75;
+        _paintCoroutine = StartCoroutine(PaintRoutine(worldPos.position));
+        snowMeter?.OnUpgrade(2);
+    }
+
+    IEnumerator ResumeFreezingAfter(float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        freezeProgress   = 0f;
+        stopFreezing     = false;
+        snowMeter?.StartFreezing();
+        _resumeCoroutine = null;
     }
 
     void PaintCircleFast(Vector3 wp, float radius, int targetLayer)

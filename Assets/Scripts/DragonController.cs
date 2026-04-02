@@ -42,15 +42,7 @@ public class DragonController : MonoBehaviour
         DOVirtual.DelayedCall(3f, () => upgradeEffect.SetActive(false));
         currentStage++;
 
-        terrainPainter.StopFreezing();
-        terrainPainter.StartPaint(45);
-        terrainPainter.snowMeter?.OnUpgrade(1);  // meter handles resume internally
-
-        // Resume terrain freeze after melt + upgrade animation
-        DOVirtual.DelayedCall(3f, () => {
-            terrainPainter.stopFreezing = false;
-            terrainPainter.snowMeter?.StartFreezing();
-        });
+        terrainPainter.OnDragonUpgraded(1, 45);
 
         fishCountText.text = Math.Max(0, requirements[currentStage - 1] - fishFed).ToString();
 
@@ -64,7 +56,7 @@ public class DragonController : MonoBehaviour
         SoundController.Instance.PlaySFX(SoundType.Upgrade);
         if (villagerAnimation != null) villagerAnimation.SetActive(true);
         MoveSnowDown();
-        dragonAnimator.SetTrigger("Upgrade2");
+        dragonAnimator.SetBool("Upgrade2", true);
         if (currentStage < 2)
         {
             UpgradeToLevel2();
@@ -117,12 +109,7 @@ public class DragonController : MonoBehaviour
 
     public void MeltIce()
     {
-        terrainPainter.StopFreezing();
-        terrainPainter.StartPaint(terrainPainter.brushSize + (1/currentStage));
-        DOVirtual.DelayedCall(0.2f, () => {
-            terrainPainter.stopFreezing = false;
-            terrainPainter.snowMeter?.OnFeedingStopped(); // resumes freeze
-        });
+        terrainPainter.OnDragonFed();
     }
     public void FeedFishOneByOne(int fishAmount)
     {
@@ -131,9 +118,6 @@ public class DragonController : MonoBehaviour
     fishBGFill.fillAmount = 1f - (float)fishFed / requirements[currentStage - 1];
     fishCountText.text = Math.Max(0, requirements[currentStage - 1] - fishFed).ToString();
     SoundController.Instance.PlaySFX(SoundType.Feed);
-    
-    terrainPainter.snowMeter?.OnFishFed(2f); // ← each fish raises temp 2°C
-    terrainPainter.stopFreezing = true;       // ← pause terrain freeze too
 
     if (canAddCoins)
     {
@@ -158,13 +142,12 @@ public class DragonController : MonoBehaviour
     {
         Debug.Log("Congratulations!");
         SoundController.Instance.PlaySFX(SoundType.Win);
-        terrainPainter.StartPaint(75);
-        dragonAnimator.SetTrigger("Upgrade3");
+        dragonAnimator.SetBool("Upgrade3", true);
+        dragonAnimator.SetTrigger("UpgradeDragon");
+        DOVirtual.DelayedCall(5f, () => dragonAnimator.SetBool("Upgrade3", false));
         DOVirtual.DelayedCall(dragonFlyDelayForFlameStart, () => StartFlamethrower());
         DOVirtual.DelayedCall(dragonFlyDelayForFlameEnd,   () => StopFlamethrower());
-        terrainPainter.StopFreezing();
-        terrainPainter.isGameOver = true;
-        terrainPainter.snowMeter?.OnUpgrade(2); // handles 30°C → delay → 40°C internally
+        terrainPainter.OnFinalWin();
         DOVirtual.DelayedCall(3f, () => terrainPainter.StartPaint(800));
     }
 

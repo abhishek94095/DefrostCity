@@ -60,7 +60,8 @@ public class Fisherman : MonoBehaviour
             inputMagnitude = input.magnitude;
         }
         bool isMoving = inputMagnitude > 0.1f;
-
+        foreach (GameObject fish in spawnedFish)
+                if (fish != null) fish.SetActive(currentZone == InteractionType.Dragon);
         // Store for FixedUpdate (movement lives there now)
         _moveInput = input;
         _isMoving  = isMoving;
@@ -85,7 +86,7 @@ public class Fisherman : MonoBehaviour
             wasMoving = true;
             if (currentZone != InteractionType.FishingArea)
             {
-                Camera.main.DOOrthoSize(9, 0.5f);
+                Camera.main.DOOrthoSize(9.5f, 0.5f);
             }
         }
         else if (!isMoving && wasMoving)
@@ -95,7 +96,7 @@ public class Fisherman : MonoBehaviour
             wasMoving = false;
             if (currentZone == InteractionType.FishingArea)
             {
-                Camera.main.DOOrthoSize(6, 0.5f);
+                Camera.main.DOOrthoSize(7f, 0.5f);
             }
         }
 
@@ -400,11 +401,6 @@ public class Fisherman : MonoBehaviour
         if (zone == null) return;
 
         currentZone = zone.type;
-        if (zone.type == InteractionType.Dragon)
-        {
-            foreach (GameObject fish in spawnedFish)
-                if (fish != null) fish.SetActive(true);
-        }
     }
 
     private void OnTriggerExit(Collider other)
@@ -412,11 +408,6 @@ public class Fisherman : MonoBehaviour
         InteractionZone zone = other.GetComponent<InteractionZone>();
         if (zone != null && zone.type == currentZone)
         {
-            if (currentZone == InteractionType.Dragon)
-            {
-                foreach (GameObject fish in spawnedFish)
-                    if (fish != null) fish.SetActive(false);
-            }
             currentZone = InteractionType.None;
             if (isFishing)
                 StopFishing();

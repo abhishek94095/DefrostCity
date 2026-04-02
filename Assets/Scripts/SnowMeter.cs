@@ -21,7 +21,8 @@ public class SnowMeter : MonoBehaviour
     [Tooltip("Degrees C dropped per second when freezing")]
     public float freezeRate = 5f;
 
-    private readonly float[] _stageWarmMax = { 0f, 15f, 30f };
+    private readonly float[] _stageWarmMax   = { 0f, 15f, 30f };
+    private readonly float[] _stageDivisors  = { 1f,  4f,  8f };
 
     private int   _currentStage = 0;
     private float _currentTemp  = 0f;
@@ -47,7 +48,7 @@ public class SnowMeter : MonoBehaviour
         // Drop temp each frame when freezing
         if (_state == State.Freezing)
         {
-            _currentTemp -= freezeRate * Time.deltaTime;
+            _currentTemp -= (freezeRate / _stageDivisors[_currentStage]) * Time.deltaTime;
             _currentTemp  = Mathf.Max(_currentTemp, absoluteMin);
         }
 
@@ -96,7 +97,6 @@ public class SnowMeter : MonoBehaviour
         _state = State.Upgrading;
 
         float target = _stageWarmMax[newStage];
-
         _tween?.Kill();
         _tween = DOTween.To(
             () => _currentTemp,
@@ -109,6 +109,8 @@ public class SnowMeter : MonoBehaviour
 
     private void OnUpgradeComplete(int completedStage)
     {
+        freezeRate *= 2f;
+
         if (completedStage == 2)
         {
             // Final upgrade: wait 1s then animate to absoluteMax (40°C) = win
@@ -126,8 +128,8 @@ public class SnowMeter : MonoBehaviour
         }
         else
         {
-            // Resume freezing after upgrade 1
-            _state = State.Freezing;
+            // TerrainPainter.ResumeFreezingAfter calls StartFreezing after the 8s delay
+            _state = State.Idle;
         }
     }
 
