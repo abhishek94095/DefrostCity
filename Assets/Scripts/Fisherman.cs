@@ -22,7 +22,6 @@ public class Fisherman : MonoBehaviour
     private bool hasMovedToLocation = false;
     private bool isNearDragon = false;
     private bool wasMoving = false;
-    private List<GameObject> spawnedFish = new List<GameObject>();
     private Fisherman firstFisherMan;
     private bool isFeeding = false;
     public float speed = 15f;
@@ -189,8 +188,6 @@ public class Fisherman : MonoBehaviour
         else 
         {
             firstFisherMan.CountOtherFishermanFish();
-            GameObject fish = Instantiate(fishPrefab, fishCountText.transform.position, Quaternion.identity, fishSpawnParent);
-            firstFisherMan.spawnedFish.Add(fish);
         }
     }
 
@@ -209,7 +206,6 @@ public class Fisherman : MonoBehaviour
         coughtFishCount++;
         fishCountText.text = coughtFishCount.ToString();
         isNearDragon = false;
-        spawnedFish.Add(fish);
         yield return null; // Wait one frame for Instantiate to complete
         fish.transform.localPosition = initialFishLocalPosition;
         fish.transform.SetParent(fishSpawnParent);
@@ -220,7 +216,7 @@ public class Fisherman : MonoBehaviour
             fish.gameObject.SetActive(true);
             yield return null;
         }
-        DOVirtual.DelayedCall(1f, () => fish.SetActive(false));
+        Destroy(fish);
     }
     
     public void StopFishing()
@@ -270,14 +266,13 @@ public class Fisherman : MonoBehaviour
             // Feed exactly ONE fish per cycle
             coughtFishCount--;
             fishCountText.text = coughtFishCount.ToString();
-
+            Vector3 startPos = transform.position;
+            
             // Animate the visual flying to the dragon plate
-            fishVisual.transform.position = fishCountText.transform.position;
             fishVisual.SetActive(true);
 
             float duration = 0.1f;
             float elapsed = 0f;
-            Vector3 startPos = fishCountText.transform.position;
 
             while (elapsed < duration)
             {
