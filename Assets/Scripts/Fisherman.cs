@@ -8,7 +8,7 @@ public class Fisherman : MonoBehaviour
 {
     public float catchTime = 3.0f;
     public GameObject fishPrefab;
-    public Transform inventoryTransform, fishSpawnPoint;
+    public Transform fishSpawnPoint, fishSpawnParent;
     [SerializeField] private bool isFollowingCamera = false;
     [SerializeField] private Animator animator;
     [SerializeField] private TextMeshProUGUI fishCountText;
@@ -60,8 +60,8 @@ public class Fisherman : MonoBehaviour
             inputMagnitude = input.magnitude;
         }
         bool isMoving = inputMagnitude > 0.1f;
-        foreach (GameObject fish in spawnedFish)
-                if (fish != null) fish.SetActive(currentZone == InteractionType.Dragon);
+        // foreach (GameObject fish in spawnedFish)
+        //         if (fish != null) fish.SetActive(currentZone == InteractionType.Dragon);
         // Store for FixedUpdate (movement lives there now)
         _moveInput = input;
         _isMoving  = isMoving;
@@ -189,7 +189,7 @@ public class Fisherman : MonoBehaviour
         else 
         {
             firstFisherMan.CountOtherFishermanFish();
-            GameObject fish = Instantiate(fishPrefab, firstFisherMan.inventoryTransform.position, Quaternion.identity, firstFisherMan.transform);
+            GameObject fish = Instantiate(fishPrefab, fishCountText.transform.position, Quaternion.identity, fishSpawnParent);
             firstFisherMan.spawnedFish.Add(fish);
         }
     }
@@ -199,10 +199,10 @@ public class Fisherman : MonoBehaviour
         coughtFishCount++;
         fishCountText.text = coughtFishCount.ToString();
     }
-
+    public Vector3 initialFishLocalPosition;
     IEnumerator MoveFishToInventory()
     {
-        GameObject fish = Instantiate(fishPrefab, fishSpawnPoint.position, Quaternion.identity, transform);
+        GameObject fish = Instantiate(fishPrefab, Vector3.zero, Quaternion.identity, fishSpawnPoint);
         SoundController.Instance.PlaySFX(SoundType.FishCatch);
         float elapsed = 0;
         float duration = 0.5f;
@@ -210,13 +210,17 @@ public class Fisherman : MonoBehaviour
         fishCountText.text = coughtFishCount.ToString();
         isNearDragon = false;
         spawnedFish.Add(fish);
+        yield return null; // Wait one frame for Instantiate to complete
+        fish.transform.localPosition = initialFishLocalPosition;
+        fish.transform.SetParent(fishSpawnParent);
         while (elapsed < duration)
         {
-            fish.transform.position = Vector3.MoveTowards(fish.transform.position, inventoryTransform.position, 10f * Time.deltaTime);
+            fish.transform.localPosition = Vector3.Lerp(initialFishLocalPosition, Vector3.zero, elapsed / duration);
             elapsed += Time.deltaTime;
+            fish.gameObject.SetActive(true);
             yield return null;
         }
-        fish.SetActive(false);
+        DOVirtual.DelayedCall(1f, () => fish.SetActive(false));
     }
     
     public void StopFishing()
@@ -250,7 +254,7 @@ public class Fisherman : MonoBehaviour
     IEnumerator FeedFishSequence()
     {
         // One reusable visual — no per-frame Instantiate/Destroy
-        GameObject fishVisual = Instantiate(fishPrefab, inventoryTransform.position, Quaternion.identity, transform);
+        GameObject fishVisual = Instantiate(fishPrefab, fishCountText.transform.position, Quaternion.identity, fishSpawnParent);
         fishVisual.SetActive(false);
 
         while (true)
@@ -268,12 +272,12 @@ public class Fisherman : MonoBehaviour
             fishCountText.text = coughtFishCount.ToString();
 
             // Animate the visual flying to the dragon plate
-            fishVisual.transform.position = inventoryTransform.position;
+            fishVisual.transform.position = fishCountText.transform.position;
             fishVisual.SetActive(true);
 
             float duration = 0.1f;
             float elapsed = 0f;
-            Vector3 startPos = inventoryTransform.position;
+            Vector3 startPos = fishCountText.transform.position;
 
             while (elapsed < duration)
             {
