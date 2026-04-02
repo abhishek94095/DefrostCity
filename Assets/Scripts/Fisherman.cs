@@ -16,7 +16,7 @@ public class Fisherman : MonoBehaviour
     [SerializeField] private Vector3 targetLocation, startingLocation;
     [SerializeField] private DragonController dragon;
     private float timer = 0;
-    private float coughtFishCount = 0;
+    private int coughtFishCount = 0;
     [SerializeField] private bool isFishing = false;
     [SerializeField] private bool canUseSpear = false;
     private bool hasMovedToLocation = false;
@@ -107,15 +107,6 @@ public class Fisherman : MonoBehaviour
                 StartFishing();
             }
             
-        }
-
-        if(currentZone != InteractionType.Dragon || dragon.IsBusy)
-        {
-            foreach (GameObject fish in spawnedFish)
-            {
-                if (fish != null)
-                    fish.SetActive(false);
-            }
         }
 
         HandleInteraction(inputMagnitude);
@@ -248,93 +239,68 @@ public class Fisherman : MonoBehaviour
         });
     }
 
-    public void MoveFishToDragon(Fisherman fisherman)
+    public void FeedFishToDragon()
     {
-        if (fisherman.coughtFishCount <= 0) return;
-        StartCoroutine(FeedFishSequence(fisherman));
-        dragon.FeedAnimation();
-        dragon.MeltIce();
-    }
-    IEnumerator FeedFishSequence(Fisherman fisherman)
-    {
+        if (isFeeding) return;
         isFeeding = true;
+        StartCoroutine(FeedFishSequence());
+    }
+
+    IEnumerator FeedFishSequence()
+    {
+        // One reusable visual — no per-frame Instantiate/Destroy
+        GameObject fishVisual = Instantiate(fishPrefab, inventoryTransform.position, Quaternion.identity, transform);
+        fishVisual.SetActive(false);
+
         while (true)
         {
-            // ⛔ Stop if no fish
-            if (coughtFishCount <= 0)
-            {
-                yield return null;
-                continue;
-            }
+            // Wait until there is at least one fish ready and conditions are met
+            yield return new WaitUntil(() =>
+                coughtFishCount > 0 &&
+                !dragon.IsBusy &&
+                currentZone == InteractionType.Dragon &&
+                !_isMoving
+            );
 
-            // ⛔ Pause if dragon is busy (upgrade)
-            if (dragon.IsBusy)
-            {
-                yield return null;
-                continue;
-            }
-
-            if(currentZone != InteractionType.Dragon)
-            {
-                yield return null;
-                continue;
-            }
-
+            // Feed exactly ONE fish per cycle
             coughtFishCount--;
             fishCountText.text = coughtFishCount.ToString();
 
-            if (spawnedFish.Count == 0)
-            {
-                GameObject newFish = Instantiate(
-                    fishPrefab,
-                    inventoryTransform.position,
-                    Quaternion.identity,
-                    firstFisherMan.transform
-                );
-                spawnedFish.Add(newFish);
-            }
+            // Animate the visual flying to the dragon plate
+            fishVisual.transform.position = inventoryTransform.position;
+            fishVisual.SetActive(true);
 
-            GameObject fish = spawnedFish[0];
-            Transform target = dragon.plate.transform;
             float duration = 0.1f;
             float elapsed = 0f;
-            if(!_isMoving && currentZone == InteractionType.Dragon)
-            {
-                fish.SetActive(true);
-            }
-            else
-            {
-                fish.SetActive(false);
-                yield return null;
-                continue;
-            }
+            Vector3 startPos = inventoryTransform.position;
 
             while (elapsed < duration)
             {
-                if (fish == null) yield break;
-                fish.transform.SetParent(dragon.plate);
-                fish.transform.position = Vector3.Lerp(
-                    fish.transform.position,
-                    target.position,
-                    elapsed / duration
-                );
-
+                fishVisual.transform.position = Vector3.Lerp(startPos, dragon.plate.position, elapsed / duration);
                 elapsed += Time.deltaTime;
                 yield return null;
             }
 
-            spawnedFish.RemoveAt(0);
-            Destroy(fish, 2.1f);
+            fishVisual.SetActive(false);
 
+            dragon.FeedAnimation();
+            dragon.MeltIce();
             dragon.FeedFishOneByOne(1);
-        }
-    }
 
-    public void FeedFishToDragon(Fisherman fisherman)
-    {
-        if(isFeeding) return;
-        isFeeding = true;
-        MoveFishToDragon(fisherman);
+            // Wait for the dragon animation, but cut short if new fish arrive
+            // (other fishermen's contributions skip the remaining delay)
+            float animWait = 4f;
+            float waited = 0f;
+            while (waited < animWait)
+            {
+                // If a new fish arrived from another fisherman, feed it immediately
+                if (coughtFishCount > 0 && !dragon.IsBusy &&
+                    currentZone == InteractionType.Dragon && !_isMoving)
+                    break;
+                waited += Time.deltaTime;
+                yield return null;
+            }
+        }
     }
 
     internal void MoveToPosition(Transform parent)
@@ -405,7 +371,7 @@ public class Fisherman : MonoBehaviour
         switch (currentZone)
         {
             case InteractionType.Dragon:
-                FeedFishToDragon(this);
+                FeedFishToDragon();
                 break;
 
             case InteractionType.Fisherman:
@@ -431,9 +397,13 @@ public class Fisherman : MonoBehaviour
     private void OnTriggerEnter(Collider other)
     {
         InteractionZone zone = other.GetComponent<InteractionZone>();
-        if (zone != null)
+        if (zone == null) return;
+
+        currentZone = zone.type;
+        if (zone.type == InteractionType.Dragon)
         {
-            currentZone = zone.type;
+            foreach (GameObject fish in spawnedFish)
+                if (fish != null) fish.SetActive(true);
         }
     }
 
@@ -442,6 +412,11 @@ public class Fisherman : MonoBehaviour
         InteractionZone zone = other.GetComponent<InteractionZone>();
         if (zone != null && zone.type == currentZone)
         {
+            if (currentZone == InteractionType.Dragon)
+            {
+                foreach (GameObject fish in spawnedFish)
+                    if (fish != null) fish.SetActive(false);
+            }
             currentZone = InteractionType.None;
             if (isFishing)
                 StopFishing();

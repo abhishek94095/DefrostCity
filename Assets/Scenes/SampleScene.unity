@@ -30848,9 +30848,10 @@ MonoBehaviour:
   fillImage: {fileID: 1007694064}
   handle: {fileID: 1919253719}
   tempText: {fileID: 1552425345}
-  minTemp: -10
-  maxTemp: 30
   barHeight: 350
+  absoluteMin: -10
+  absoluteMax: 40
+  freezeRate: 1
 --- !u!1 &1195365624
 GameObject:
   m_ObjectHideFlags: 0
@@ -35042,7 +35043,7 @@ MonoBehaviour:
   level3GrassPatchParent: {fileID: 1694340011}
   level2SnowPatchParent: {fileID: 1618734558}
   level3SnowPathParent: {fileID: 1866914465}
-  requirements: 0a00000014000000
+  requirements: 0a00000064000000
   canAddCoins: 1
   dragonFlyDelayForFlameStart: 2
   dragonFlyDelayForFlameEnd: 5
@@ -36579,8 +36580,8 @@ MonoBehaviour:
   terrain: {fileID: 1453450491}
   worldPos: {fileID: 1025625895}
   brushSize: 25
-  multiplier: 1
-  freezeSpeed: 0.04
+  multiplier: 2.08
+  freezeSpeed: 0.00005
   stopFreezing: 1
   isGameOver: 0
   snowMeter: {fileID: 1193416022}

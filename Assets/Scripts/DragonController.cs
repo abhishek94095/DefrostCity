@@ -33,19 +33,27 @@ public class DragonController : MonoBehaviour
     private void UpgradeToLevel2()
     {
         SoundController.Instance.PlaySFX(SoundType.FireBreath);
-        DragonLevel2.SetActive(true); // Show new dragon visuals
-        foreach (var obj in currentDragonObjects) obj.SetActive(false); // Hide old dragon visuals
-        dragonAnimator = DragonLevel2.GetComponent<Animator>(); // Switch to new animator
-        dragonAnimator.SetTrigger("Firebreath_L"); // Play upgrade animation
-        //SpawnFishermen(spawnPoints.Length); // Spawns more as dragon grows
+        DragonLevel2.SetActive(true);
+        foreach (var obj in currentDragonObjects) obj.SetActive(false);
+        dragonAnimator = DragonLevel2.GetComponent<Animator>();
+        dragonAnimator.SetTrigger("Firebreath_L");
         StartFlamethrower();
         upgradeEffect.SetActive(true);
         DOVirtual.DelayedCall(3f, () => upgradeEffect.SetActive(false));
         currentStage++;
+
+        terrainPainter.StopFreezing();
         terrainPainter.StartPaint(45);
-        terrainPainter.StopFreezing(); // Stop any ongoing freezing
-        DOVirtual.DelayedCall(8f, () => terrainPainter.stopFreezing = false); // Resume freezing after delay
-        fishCountText.text = Math.Max(0,requirements[currentStage - 1] - fishFed).ToString(); // Update UI with remaining fish needed
+        terrainPainter.snowMeter?.OnUpgrade(1);  // meter handles resume internally
+
+        // Resume terrain freeze after melt + upgrade animation
+        DOVirtual.DelayedCall(3f, () => {
+            terrainPainter.stopFreezing = false;
+            terrainPainter.snowMeter?.StartFreezing();
+        });
+
+        fishCountText.text = Math.Max(0, requirements[currentStage - 1] - fishFed).ToString();
+
     }   
 
     public void UpgradeDragon()
@@ -109,28 +117,31 @@ public class DragonController : MonoBehaviour
 
     public void MeltIce()
     {
-        terrainPainter.stopFreezing = true; // Stop any ongoing freezing
-        terrainPainter.StartPaint(terrainPainter.brushSize + 10);
-        DOVirtual.DelayedCall(3f, () => terrainPainter.stopFreezing = false);
+        terrainPainter.StopFreezing();
+        terrainPainter.StartPaint(terrainPainter.brushSize + (1/currentStage));
+        DOVirtual.DelayedCall(0.2f, () => {
+            terrainPainter.stopFreezing = false;
+            terrainPainter.snowMeter?.OnFeedingStopped(); // resumes freeze
+        });
     }
     public void FeedFishOneByOne(int fishAmount)
     {
         if (fishAmount <= 0) return;
-        fishFed += fishAmount;
-        fishBGFill.fillAmount = 1f - (float)fishFed / (float)requirements[currentStage - 1] ;
-        fishCountText.text = Math.Max(0,requirements[currentStage - 1] - fishFed).ToString(); // Update UI with remaining fish needed
-        // 🔥 Play animation per fish
-        SoundController.Instance.PlaySFX(SoundType.Feed);
-        if(canAddCoins) 
-        {
-            canAddCoins = false;
-            CurrencyHandler.Instance.AddGoldFromFish(1);
-        }
-        if (fishFed >= requirements[currentStage - 1])
-        {
-            UpgradeDragon();
-        }
+    fishFed += fishAmount;
+    fishBGFill.fillAmount = 1f - (float)fishFed / requirements[currentStage - 1];
+    fishCountText.text = Math.Max(0, requirements[currentStage - 1] - fishFed).ToString();
+    SoundController.Instance.PlaySFX(SoundType.Feed);
+    
+    terrainPainter.snowMeter?.OnFishFed(2f); // ← each fish raises temp 2°C
+    terrainPainter.stopFreezing = true;       // ← pause terrain freeze too
 
+    if (canAddCoins)
+    {
+        canAddCoins = false;
+        CurrencyHandler.Instance.AddGoldFromFish(1);
+    }
+    if (fishFed >= requirements[currentStage - 1])
+        UpgradeDragon();
     }
 
     public void FeedAnimation() => dragonAnimator.SetTrigger("Feed");
@@ -145,15 +156,15 @@ public class DragonController : MonoBehaviour
 
     void FinalWin()
     {
-        Debug.Log("Congratulations! You've saved the city!");
+        Debug.Log("Congratulations!");
         SoundController.Instance.PlaySFX(SoundType.Win);
         terrainPainter.StartPaint(75);
         dragonAnimator.SetTrigger("Upgrade3");
         DOVirtual.DelayedCall(dragonFlyDelayForFlameStart, () => StartFlamethrower());
-        DOVirtual.DelayedCall(dragonFlyDelayForFlameEnd, () => StopFlamethrower());
-        terrainPainter.StopFreezing(); // Stop any ongoing freezing
-        terrainPainter.isGameOver = true; // Stop all freezing logic
-        terrainPainter.snowMeter?.SetGameOver(); // Trigger snow meter game over animation
+        DOVirtual.DelayedCall(dragonFlyDelayForFlameEnd,   () => StopFlamethrower());
+        terrainPainter.StopFreezing();
+        terrainPainter.isGameOver = true;
+        terrainPainter.snowMeter?.OnUpgrade(2); // handles 30°C → delay → 40°C internally
         DOVirtual.DelayedCall(3f, () => terrainPainter.StartPaint(800));
     }
 
@@ -162,6 +173,13 @@ public class DragonController : MonoBehaviour
 
     void Start()
     {
-        DOVirtual.DelayedCall(4.8f, () => terrainPainter.StartFreezing(() => loseLevelScreen.SetActive(true)));
+        DOVirtual.DelayedCall(3.8f, () =>
+        { 
+            terrainPainter.StartPaint(terrainPainter.brushSize);
+        });
+        DOVirtual.DelayedCall(4.8f, () =>
+        { 
+            terrainPainter.StartFreezing(() => loseLevelScreen.SetActive(true));
+        });
     }
 }
