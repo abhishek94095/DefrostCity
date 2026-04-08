@@ -65,7 +65,6 @@ public class Fisherman : MonoBehaviour
         _moveInput = input;
         _isMoving  = isMoving;
 
-        // 🎣 Fishing logic — IDENTICAL to yours
         if (isFishing || canUseSpear)
         {
             timer += Time.deltaTime;
@@ -102,7 +101,7 @@ public class Fisherman : MonoBehaviour
         // ✅ StartFishing when idle in zone — IDENTICAL to yours
         if (!isMoving)
         {
-            if (currentZone == InteractionType.Fisherman && !isFishing)
+            if (currentZone == InteractionType.Fisherman && !isFishing && !wasMoving)
             {
                 StartFishing();
             }
