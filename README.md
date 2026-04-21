@@ -1,2 +1,2 @@
 # DefrostCity
-[![Watch the demo](https://img.youtube.com/vi/rxYvLGTit44/0.jpg)](https://youtu.be/rxYvLGTit44)
+https://github.com/abhishek94095/DefrostCity/raw/Develop/GameOfThronesProject.mp4
